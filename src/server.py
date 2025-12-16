@@ -26,9 +26,23 @@ from src.schemas.task_schemas import (
     UpdateTaskInput,
     DeleteTaskInput
 )
+from src.schemas.project_schemas import (
+    CreateProjectInput,
+    ListProjectsInput,
+    UpdateProjectInput,
+    DeleteProjectInput,
+    GetProjectTasksInput,
+    MoveTaskInput,
+    CreateLabelInput,
+    ListLabelsInput,
+    DeleteLabelInput,
+    AddLabelToTaskInput,
+    RemoveLabelFromTaskInput,
+    GetTasksByLabelInput
+)
 
 # Import tools
-from src.tools import tasks
+from src.tools import tasks, projects, labels
 
 
 # Initialize MCP server
@@ -51,6 +65,8 @@ async def lifespan():
     # Initialize Vikunja client
     _client = VikunjiaClient()
     tasks.set_client(_client)
+    projects.set_client(_client)
+    labels.set_client(_client)
 
     print(f"✓ Vikunja MCP server initialized")
     print(f"  URL: {_client.base_url}")
@@ -144,6 +160,194 @@ async def update_task(params: UpdateTaskInput) -> str:
 async def delete_task(params: DeleteTaskInput) -> str:
     '''Delete a task permanently. This operation cannot be undone.'''
     return await tasks.vikunja_delete_task(params)
+
+
+# ============================================================================
+# PROJECT MANAGEMENT TOOLS
+# ============================================================================
+
+@mcp.tool(
+    name="vikunja_create_project",
+    annotations={
+        "title": "Create Vikunja Project",
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": False,
+        "openWorldHint": True
+    }
+)
+async def create_project(params: CreateProjectInput) -> str:
+    '''Create a new project/list in Vikunja with title, description, color, and optional hierarchy.'''
+    return await projects.vikunja_create_project(params)
+
+
+@mcp.tool(
+    name="vikunja_list_projects",
+    annotations={
+        "title": "List Vikunja Projects",
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True
+    }
+)
+async def list_projects(params: ListProjectsInput) -> str:
+    '''List all projects/lists accessible to the authenticated user.'''
+    return await projects.vikunja_list_projects(params)
+
+
+@mcp.tool(
+    name="vikunja_update_project",
+    annotations={
+        "title": "Update Vikunja Project",
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True
+    }
+)
+async def update_project(params: UpdateProjectInput) -> str:
+    '''Update existing project fields (title, description, color). PATCH operation.'''
+    return await projects.vikunja_update_project(params)
+
+
+@mcp.tool(
+    name="vikunja_delete_project",
+    annotations={
+        "title": "Delete Vikunja Project",
+        "readOnlyHint": False,
+        "destructiveHint": True,
+        "idempotentHint": True,
+        "openWorldHint": True
+    }
+)
+async def delete_project(params: DeleteProjectInput) -> str:
+    '''Delete a project and all its tasks permanently. This operation cannot be undone.'''
+    return await projects.vikunja_delete_project(params)
+
+
+@mcp.tool(
+    name="vikunja_get_project_tasks",
+    annotations={
+        "title": "Get Project Tasks",
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True
+    }
+)
+async def get_project_tasks(params: GetProjectTasksInput) -> str:
+    '''List all tasks in a specific project with pagination.'''
+    return await projects.vikunja_get_project_tasks(params)
+
+
+@mcp.tool(
+    name="vikunja_move_task_to_project",
+    annotations={
+        "title": "Move Task to Project",
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True
+    }
+)
+async def move_task_to_project(params: MoveTaskInput) -> str:
+    '''Move a task to a different project.'''
+    return await projects.vikunja_move_task_to_project(params)
+
+
+# ============================================================================
+# LABEL MANAGEMENT TOOLS
+# ============================================================================
+
+@mcp.tool(
+    name="vikunja_create_label",
+    annotations={
+        "title": "Create Vikunja Label",
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": False,
+        "openWorldHint": True
+    }
+)
+async def create_label(params: CreateLabelInput) -> str:
+    '''Create a new label with title, description, and color for task categorization.'''
+    return await labels.vikunja_create_label(params)
+
+
+@mcp.tool(
+    name="vikunja_list_labels",
+    annotations={
+        "title": "List Vikunja Labels",
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True
+    }
+)
+async def list_labels(params: ListLabelsInput) -> str:
+    '''List all labels available in the Vikunja instance.'''
+    return await labels.vikunja_list_labels(params)
+
+
+@mcp.tool(
+    name="vikunja_delete_label",
+    annotations={
+        "title": "Delete Vikunja Label",
+        "readOnlyHint": False,
+        "destructiveHint": True,
+        "idempotentHint": True,
+        "openWorldHint": True
+    }
+)
+async def delete_label(params: DeleteLabelInput) -> str:
+    '''Delete a label permanently and remove it from all tasks. This operation cannot be undone.'''
+    return await labels.vikunja_delete_label(params)
+
+
+@mcp.tool(
+    name="vikunja_add_label_to_task",
+    annotations={
+        "title": "Add Label to Task",
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True
+    }
+)
+async def add_label_to_task(params: AddLabelToTaskInput) -> str:
+    '''Apply an existing label to a task for categorization.'''
+    return await labels.vikunja_add_label_to_task(params)
+
+
+@mcp.tool(
+    name="vikunja_remove_label_from_task",
+    annotations={
+        "title": "Remove Label from Task",
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True
+    }
+)
+async def remove_label_from_task(params: RemoveLabelFromTaskInput) -> str:
+    '''Remove a label from a task.'''
+    return await labels.vikunja_remove_label_from_task(params)
+
+
+@mcp.tool(
+    name="vikunja_get_tasks_by_label",
+    annotations={
+        "title": "Get Tasks by Label",
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True
+    }
+)
+async def get_tasks_by_label(params: GetTasksByLabelInput) -> str:
+    '''Filter tasks by label with pagination support.'''
+    return await labels.vikunja_get_tasks_by_label(params)
 
 
 # ============================================================================
