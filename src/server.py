@@ -65,7 +65,7 @@ _client: VikunjiaClient = None
 
 
 @asynccontextmanager
-async def lifespan():
+async def lifespan(app):
     '''
     Manage server lifespan - initialize and cleanup resources.
 
