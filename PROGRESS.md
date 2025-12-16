@@ -19,45 +19,45 @@
 
 ---
 
-## Milestone 1: v0.1.0 - Foundation & Core Task Management (2-3 weeks)
+## Milestone 1: v0.1.0 - Foundation & Core Task Management ✅ COMPLETE
 
-### Epic 1: Project Setup & Infrastructure
-
-| ID | Task | Complexity | Status |
-|----|------|------------|--------|
-| **Feature 1.1** | **Project scaffolding and dependency setup** | 1.8 | 🔴 |
-| Task 1.1.1 | Create project directory structure (src/, tests/, evaluations/) | 1.3 | 🔴 |
-| Task 1.1.2 | Initialize requirements.txt with mcp, httpx, pydantic | 1.5 | 🔴 |
-| Task 1.1.3 | Create .env.example with VIKUNJA_URL and VIKUNJA_TOKEN | 1.3 | 🔴 |
-| Task 1.1.4 | Initialize README.md with project description | 1.5 | 🔴 |
-| **Feature 1.2** | **Vikunja API client foundation** | 2.5 | 🔴 |
-| Task 1.2.1 | Implement VikunjiaClient class with httpx async client | 2.3 | 🔴 |
-| Task 1.2.2 | Add bearer token authentication headers | 1.8 | 🔴 |
-| Task 1.2.3 | Create base request method with error handling and rate limiting | 2.8 | 🔴 |
-| Task 1.2.4 | Add unit tests for client initialization and auth | 2.3 | 🔴 |
-| **Feature 1.3** | **Shared utilities and formatters** | 2.2 | 🔴 |
-| Task 1.3.1 | Create response formatters for JSON and Markdown output | 2.5 | 🔴 |
-| Task 1.3.2 | Implement pagination helper with page/limit parameters | 2.0 | 🔴 |
-| Task 1.3.3 | Build error handler with LLM-friendly messages | 2.3 | 🔴 |
-| Task 1.3.4 | Add character limit enforcement (25k tokens) | 2.0 | 🔴 |
-
-### Epic 2: Core Task Management Tools
+### Epic 1: Project Setup & Infrastructure ✅
 
 | ID | Task | Complexity | Status |
 |----|------|------------|--------|
-| **Feature 2.1** | **Task creation tool** | 2.8 | 🔴 |
-| Task 2.1.1 | Define Pydantic schema for task creation | 2.3 | 🔴 |
-| Task 2.1.2 | Implement create_task tool with POST endpoint | 2.8 | 🔴 |
-| Task 2.1.3 | Add comprehensive tool description with examples | 2.0 | 🔴 |
-| Task 2.1.4 | Create unit tests for task creation | 2.5 | 🔴 |
-| **Feature 2.2** | **Task retrieval and listing tools** | 2.5 | 🔴 |
-| Task 2.2.1 | Implement get_task tool for single task by ID | 2.0 | 🔴 |
-| Task 2.2.2 | Implement list_tasks with pagination and filtering | 3.0 | 🔴 |
-| Task 2.2.3 | Add response format options (detailed vs concise) | 2.3 | 🔴 |
-| **Feature 2.3** | **Task update and delete tools** | 2.3 | 🔴 |
-| Task 2.3.1 | Implement update_task with PATCH support | 2.5 | 🔴 |
-| Task 2.3.2 | Implement delete_task with confirmation pattern | 2.0 | 🔴 |
-| Task 2.3.3 | Add destructiveHint and idempotentHint annotations | 1.8 | 🔴 |
+| **Feature 1.1** | **Project scaffolding and dependency setup** | 1.8 | 🟢 |
+| Task 1.1.1 | Create project directory structure (src/, tests/, evaluations/) | 1.3 | 🟢 |
+| Task 1.1.2 | Initialize requirements.txt with mcp, httpx, pydantic | 1.5 | 🟢 |
+| Task 1.1.3 | Create .env.example with VIKUNJA_URL and VIKUNJA_TOKEN | 1.3 | 🟢 |
+| Task 1.1.4 | Initialize README.md with project description | 1.5 | 🟢 |
+| **Feature 1.2** | **Vikunja API client foundation** | 2.5 | 🟢 |
+| Task 1.2.1 | Implement VikunjiaClient class with httpx async client | 2.3 | 🟢 |
+| Task 1.2.2 | Add bearer token authentication headers | 1.8 | 🟢 |
+| Task 1.2.3 | Create base request method with error handling and rate limiting | 2.8 | 🟢 |
+| Task 1.2.4 | Add unit tests for client initialization and auth | 2.3 | 🟢 |
+| **Feature 1.3** | **Shared utilities and formatters** | 2.2 | 🟢 |
+| Task 1.3.1 | Create response formatters for JSON and Markdown output | 2.5 | 🟢 |
+| Task 1.3.2 | Implement pagination helper with page/limit parameters | 2.0 | 🟢 |
+| Task 1.3.3 | Build error handler with LLM-friendly messages | 2.3 | 🟢 |
+| Task 1.3.4 | Add character limit enforcement (25k tokens) | 2.0 | 🟢 |
+
+### Epic 2: Core Task Management Tools ✅
+
+| ID | Task | Complexity | Status |
+|----|------|------------|--------|
+| **Feature 2.1** | **Task creation tool** | 2.8 | 🟢 |
+| Task 2.1.1 | Define Pydantic schema for task creation | 2.3 | 🟢 |
+| Task 2.1.2 | Implement create_task tool with POST endpoint | 2.8 | 🟢 |
+| Task 2.1.3 | Add comprehensive tool description with examples | 2.0 | 🟢 |
+| Task 2.1.4 | Create unit tests for task creation | 2.5 | 🟢 |
+| **Feature 2.2** | **Task retrieval and listing tools** | 2.5 | 🟢 |
+| Task 2.2.1 | Implement get_task tool for single task by ID | 2.0 | 🟢 |
+| Task 2.2.2 | Implement list_tasks with pagination and filtering | 3.0 | 🟢 |
+| Task 2.2.3 | Add response format options (detailed vs concise) | 2.3 | 🟢 |
+| **Feature 2.3** | **Task update and delete tools** | 2.3 | 🟢 |
+| Task 2.3.1 | Implement update_task with PATCH support | 2.5 | 🟢 |
+| Task 2.3.2 | Implement delete_task with confirmation pattern | 2.0 | 🟢 |
+| Task 2.3.3 | Add destructiveHint and idempotentHint annotations | 1.8 | 🟢 |
 
 ---
 
