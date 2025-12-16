@@ -1,0 +1,825 @@
+blueprint_type: project
+created: 2025-12-16
+tracking_method: document
+
+project_overview:
+  brief: "Python-based MCP server providing comprehensive integration with Vikunja task management system (v0.24.0+) using REST API with bearer token authentication. Enables LLMs to perform task CRUD, project management, label filtering, and advanced features (reminders, attachments, relationships, teams)."
+  core_objectives:
+    - "Enable complete task lifecycle management through natural language interactions"
+    - "Provide efficient, token-optimized responses with configurable detail levels"
+    - "Support advanced Vikunja features for power users (teams, attachments, relationships)"
+    - "Achieve 90%+ test coverage with comprehensive evaluation scenarios"
+
+architecture:
+  pattern: "layered"
+  rationale: "MCP servers benefit from clear separation: tools/ (API endpoints), client/ (Vikunja API wrapper), schemas/ (validation), utils/ (shared formatting). Layered pattern provides simplicity for this backend service while enabling easy testing and maintenance."
+  structure: |
+    vikunja-mcp/
+    ├── src/
+    │   ├── server.py              # Main MCP server entry point
+    │   ├── client/                # Vikunja API client layer
+    │   │   ├── __init__.py
+    │   │   ├── vikunja_client.py  # HTTP client wrapper
+    │   │   └── auth.py            # Authentication handling
+    │   ├── tools/                 # MCP tool implementations
+    │   │   ├── __init__.py
+    │   │   ├── tasks.py           # Task CRUD operations
+    │   │   ├── projects.py        # Project/list management
+    │   │   ├── labels.py          # Label operations
+    │   │   └── advanced.py        # Reminders, attachments, relationships
+    │   ├── schemas/               # Pydantic validation models
+    │   │   ├── __init__.py
+    │   │   ├── task_schemas.py
+    │   │   └── project_schemas.py
+    │   └── utils/                 # Shared utilities
+    │       ├── __init__.py
+    │       ├── formatters.py      # JSON/Markdown response formatting
+    │       ├── pagination.py      # Page handling
+    │       └── errors.py          # Error handling
+    ├── evaluations/
+    │   └── vikunja_eval.xml       # 10+ evaluation scenarios
+    ├── tests/
+    │   ├── test_tasks.py
+    │   ├── test_projects.py
+    │   └── test_client.py
+    ├── requirements.txt
+    ├── README.md
+    └── .env.example
+
+milestones:
+  milestone_1:
+    name: "v0.1.0 - Foundation & Core Task Management"
+    timeline_weeks: "2-3"
+    description: "Establish project infrastructure, authentication, and basic task CRUD operations"
+
+    epics:
+      epic_1:
+        name: "Project Setup & Infrastructure"
+        description: "Initialize project structure, dependencies, configuration, and development environment"
+
+        feature_1_1:
+          name: "Project scaffolding and dependency setup"
+          complexity:
+            composite: 1.8
+            dimensions:
+              technical_complexity: 2
+              scope_size: 2
+              dependencies: 1
+              uncertainty: 2
+              risk: 2
+              testing: 2
+          estimated_days: 1
+
+          task_1_1_1:
+            name: "Create project directory structure (src/, tests/, evaluations/)"
+            complexity:
+              composite: 1.3
+            estimated_days: 0.25
+
+          task_1_1_2:
+            name: "Initialize requirements.txt with mcp, httpx, pydantic dependencies"
+            complexity:
+              composite: 1.5
+            estimated_days: 0.25
+
+          task_1_1_3:
+            name: "Create .env.example with VIKUNJA_URL and VIKUNJA_TOKEN placeholders"
+            complexity:
+              composite: 1.3
+            estimated_days: 0.25
+
+          task_1_1_4:
+            name: "Initialize README.md with project description and setup instructions"
+            complexity:
+              composite: 1.5
+            estimated_days: 0.25
+
+        feature_1_2:
+          name: "Vikunja API client foundation"
+          complexity:
+            composite: 2.5
+            dimensions:
+              technical_complexity: 3
+              scope_size: 2
+              dependencies: 2
+              uncertainty: 3
+              risk: 2
+              testing: 3
+          estimated_days: 2
+
+          task_1_2_1:
+            name: "Implement VikunjiaClient class with httpx async client"
+            complexity:
+              composite: 2.3
+            estimated_days: 0.75
+
+          task_1_2_2:
+            name: "Add bearer token authentication headers to all requests"
+            complexity:
+              composite: 1.8
+            estimated_days: 0.25
+
+          task_1_2_3:
+            name: "Create base request method with error handling and rate limiting"
+            complexity:
+              composite: 2.8
+            estimated_days: 0.5
+
+          task_1_2_4:
+            name: "Add unit tests for client initialization and auth"
+            complexity:
+              composite: 2.3
+            estimated_days: 0.5
+
+        feature_1_3:
+          name: "Shared utilities and formatters"
+          complexity:
+            composite: 2.2
+            dimensions:
+              technical_complexity: 2
+              scope_size: 3
+              dependencies: 2
+              uncertainty: 2
+              risk: 1
+              testing: 3
+          estimated_days: 2
+
+          task_1_3_1:
+            name: "Create response formatters for JSON and Markdown output"
+            complexity:
+              composite: 2.5
+            estimated_days: 0.75
+
+          task_1_3_2:
+            name: "Implement pagination helper with page/limit parameters"
+            complexity:
+              composite: 2.0
+            estimated_days: 0.5
+
+          task_1_3_3:
+            name: "Build error handler with LLM-friendly natural language messages"
+            complexity:
+              composite: 2.3
+            estimated_days: 0.5
+
+          task_1_3_4:
+            name: "Add character limit enforcement (25k tokens) with truncation"
+            complexity:
+              composite: 2.0
+            estimated_days: 0.25
+
+      epic_2:
+        name: "Core Task Management Tools"
+        description: "Implement essential task CRUD operations (create, read, update, delete, list)"
+
+        feature_2_1:
+          name: "Task creation tool"
+          complexity:
+            composite: 2.8
+            dimensions:
+              technical_complexity: 3
+              scope_size: 3
+              dependencies: 2
+              uncertainty: 3
+              risk: 2
+              testing: 3
+          estimated_days: 2
+
+          task_2_1_1:
+            name: "Define Pydantic schema for task creation (title, description, due_date, priority, project_id)"
+            complexity:
+              composite: 2.3
+            estimated_days: 0.5
+
+          task_2_1_2:
+            name: "Implement create_task tool with POST /api/v1/projects/{id}/tasks"
+            complexity:
+              composite: 2.8
+            estimated_days: 0.75
+
+          task_2_1_3:
+            name: "Add comprehensive tool description with parameter examples"
+            complexity:
+              composite: 2.0
+            estimated_days: 0.25
+
+          task_2_1_4:
+            name: "Create unit tests for task creation with various parameter combinations"
+            complexity:
+              composite: 2.5
+            estimated_days: 0.5
+
+        feature_2_2:
+          name: "Task retrieval and listing tools"
+          complexity:
+            composite: 2.5
+            dimensions:
+              technical_complexity: 3
+              scope_size: 3
+              dependencies: 2
+              uncertainty: 2
+              risk: 1
+              testing: 3
+          estimated_days: 2
+
+          task_2_2_1:
+            name: "Implement get_task tool for single task by ID"
+            complexity:
+              composite: 2.0
+            estimated_days: 0.5
+
+          task_2_2_2:
+            name: "Implement list_tasks with pagination, filtering (status, priority, assignee)"
+            complexity:
+              composite: 3.0
+            estimated_days: 1.0
+            needs_decomposition: false
+            decomposition_note: "At threshold but manageable - filtering logic is straightforward"
+
+          task_2_2_3:
+            name: "Add response format options (detailed vs concise)"
+            complexity:
+              composite: 2.3
+            estimated_days: 0.5
+
+        feature_2_3:
+          name: "Task update and delete tools"
+          complexity:
+            composite: 2.3
+            dimensions:
+              technical_complexity: 2
+              scope_size: 2
+              dependencies: 2
+              uncertainty: 2
+              risk: 3
+              testing: 3
+          estimated_days: 1.5
+
+          task_2_3_1:
+            name: "Implement update_task with PATCH support for partial updates"
+            complexity:
+              composite: 2.5
+            estimated_days: 0.75
+
+          task_2_3_2:
+            name: "Implement delete_task with confirmation pattern"
+            complexity:
+              composite: 2.0
+            estimated_days: 0.5
+
+          task_2_3_3:
+            name: "Add destructiveHint and idempotentHint annotations"
+            complexity:
+              composite: 1.8
+            estimated_days: 0.25
+
+  milestone_2:
+    name: "v0.2.0 - Project & Label Management"
+    timeline_weeks: "2"
+    description: "Enable project/list operations and label-based filtering"
+
+    epics:
+      epic_3:
+        name: "Project/List Management"
+        description: "Create, list, update, and delete projects (Vikunja lists)"
+
+        feature_3_1:
+          name: "Project CRUD operations"
+          complexity:
+            composite: 2.5
+            dimensions:
+              technical_complexity: 2
+              scope_size: 3
+              dependencies: 2
+              uncertainty: 2
+              risk: 2
+              testing: 4
+          estimated_days: 2.5
+
+          task_3_1_1:
+            name: "Define project schema with title, description, color, parent_project_id"
+            complexity:
+              composite: 2.0
+            estimated_days: 0.5
+
+          task_3_1_2:
+            name: "Implement create_project and list_projects tools"
+            complexity:
+              composite: 2.5
+            estimated_days: 1.0
+
+          task_3_1_3:
+            name: "Implement update_project and delete_project tools"
+            complexity:
+              composite: 2.3
+            estimated_days: 0.75
+
+          task_3_1_4:
+            name: "Add tests for project hierarchy and nested structures"
+            complexity:
+              composite: 2.8
+            estimated_days: 0.25
+
+        feature_3_2:
+          name: "Project-task relationship tools"
+          complexity:
+            composite: 2.2
+            dimensions:
+              technical_complexity: 2
+              scope_size: 2
+              dependencies: 3
+              uncertainty: 2
+              risk: 1
+              testing: 3
+          estimated_days: 1.5
+
+          task_3_2_1:
+            name: "Implement get_project_tasks to list all tasks in project"
+            complexity:
+              composite: 2.0
+            estimated_days: 0.75
+
+          task_3_2_2:
+            name: "Add move_task_to_project tool for relocating tasks"
+            complexity:
+              composite: 2.5
+            estimated_days: 0.75
+
+      epic_4:
+        name: "Label System"
+        description: "Label creation, application, and filtering capabilities"
+
+        feature_4_1:
+          name: "Label management tools"
+          complexity:
+            composite: 2.3
+            dimensions:
+              technical_complexity: 2
+              scope_size: 2
+              dependencies: 2
+              uncertainty: 2
+              risk: 1
+              testing: 4
+          estimated_days: 2
+
+          task_4_1_1:
+            name: "Implement create_label with title, description, color"
+            complexity:
+              composite: 2.0
+            estimated_days: 0.5
+
+          task_4_1_2:
+            name: "Implement list_labels and delete_label tools"
+            complexity:
+              composite: 1.8
+            estimated_days: 0.5
+
+          task_4_1_3:
+            name: "Add label application tools (add_label_to_task, remove_label_from_task)"
+            complexity:
+              composite: 2.5
+            estimated_days: 0.75
+
+          task_4_1_4:
+            name: "Create tests for label operations and edge cases"
+            complexity:
+              composite: 2.5
+            estimated_days: 0.25
+
+        feature_4_2:
+          name: "Label-based filtering"
+          complexity:
+            composite: 2.8
+            dimensions:
+              technical_complexity: 3
+              scope_size: 2
+              dependencies: 3
+              uncertainty: 3
+              risk: 1
+              testing: 3
+          estimated_days: 1.5
+
+          task_4_2_1:
+            name: "Extend list_tasks to support label filtering (AND/OR logic)"
+            complexity:
+              composite: 3.0
+            estimated_days: 1.0
+            needs_decomposition: false
+            decomposition_note: "At threshold but manageable - query parameter combination logic"
+
+          task_4_2_2:
+            name: "Add get_tasks_by_label convenience tool"
+            complexity:
+              composite: 2.3
+            estimated_days: 0.5
+
+  milestone_3:
+    name: "v0.3.0 - Advanced Features"
+    timeline_weeks: "3"
+    description: "Implement reminders, attachments, task relationships, and team collaboration"
+
+    epics:
+      epic_5:
+        name: "Reminders & Notifications"
+        description: "Time-based reminders and notification management"
+
+        feature_5_1:
+          name: "Reminder management tools"
+          complexity:
+            composite: 2.7
+            dimensions:
+              technical_complexity: 3
+              scope_size: 2
+              dependencies: 2
+              uncertainty: 3
+              risk: 2
+              testing: 3
+          estimated_days: 2
+
+          task_5_1_1:
+            name: "Define reminder schema with reminder_date and relative_to options"
+            complexity:
+              composite: 2.5
+            estimated_days: 0.5
+
+          task_5_1_2:
+            name: "Implement add_reminder_to_task tool with datetime validation"
+            complexity:
+              composite: 2.8
+            estimated_days: 1.0
+
+          task_5_1_3:
+            name: "Implement list_reminders and delete_reminder tools"
+            complexity:
+              composite: 2.3
+            estimated_days: 0.5
+
+      epic_6:
+        name: "Attachments & Files"
+        description: "File attachment management for tasks"
+
+        feature_6_1:
+          name: "Attachment operations"
+          complexity:
+            composite: 3.2
+            dimensions:
+              technical_complexity: 4
+              scope_size: 3
+              dependencies: 2
+              uncertainty: 4
+              risk: 3
+              testing: 3
+          estimated_days: 3
+          needs_decomposition: true
+          decomposition_depth: 3
+          decomposition_reason: "High technical complexity (4) for multipart upload handling and high uncertainty (4) around binary data streaming in MCP context"
+          spike_suggestion: "BLUEPRINT-spike-mcp-file-handling-20251216.yaml"
+
+          task_6_1_1:
+            name: "Research MCP file/binary data handling patterns"
+            complexity:
+              composite: 3.0
+              uncertainty: 4
+            estimated_days: 1.0
+            needs_spike: true
+            spike_reason: "Unclear how to handle file uploads in MCP tool context - need to verify SDK capabilities"
+
+          task_6_1_2:
+            name: "Implement upload_attachment tool with multipart/form-data"
+            complexity:
+              composite: 3.5
+            estimated_days: 1.5
+
+          task_6_1_3:
+            name: "Implement list_attachments and delete_attachment tools"
+            complexity:
+              composite: 2.5
+            estimated_days: 0.5
+
+      epic_7:
+        name: "Task Relationships"
+        description: "Parent-child task relationships and dependencies"
+
+        feature_7_1:
+          name: "Relationship management tools"
+          complexity:
+            composite: 2.8
+            dimensions:
+              technical_complexity: 3
+              scope_size: 2
+              dependencies: 3
+              uncertainty: 3
+              risk: 2
+              testing: 3
+          estimated_days: 2.5
+
+          task_7_1_1:
+            name: "Implement create_task_relation with relation_kind (subtask, parenttask, related)"
+            complexity:
+              composite: 2.8
+            estimated_days: 1.0
+
+          task_7_1_2:
+            name: "Implement get_task_relations to view relationship graph"
+            complexity:
+              composite: 2.5
+            estimated_days: 0.75
+
+          task_7_1_3:
+            name: "Implement delete_task_relation tool"
+            complexity:
+              composite: 2.3
+            estimated_days: 0.5
+
+          task_7_1_4:
+            name: "Add tests for circular dependency prevention"
+            complexity:
+              composite: 3.2
+            estimated_days: 0.25
+
+      epic_8:
+        name: "Team Collaboration"
+        description: "Team management, user assignment, and sharing"
+
+        feature_8_1:
+          name: "Team and user tools"
+          complexity:
+            composite: 2.5
+            dimensions:
+              technical_complexity: 2
+              scope_size: 3
+              dependencies: 2
+              uncertainty: 3
+              risk: 2
+              testing: 3
+          estimated_days: 2.5
+
+          task_8_1_1:
+            name: "Implement list_teams and get_team_members tools"
+            complexity:
+              composite: 2.3
+            estimated_days: 0.75
+
+          task_8_1_2:
+            name: "Implement assign_task to assign users to tasks"
+            complexity:
+              composite: 2.5
+            estimated_days: 0.75
+
+          task_8_1_3:
+            name: "Implement share_project tool with permission levels (read, write, admin)"
+            complexity:
+              composite: 2.8
+            estimated_days: 1.0
+
+  milestone_4:
+    name: "v1.0.0 - Testing, Documentation & Release"
+    timeline_weeks: "2"
+    description: "Comprehensive testing, evaluation creation, documentation, and production readiness"
+
+    epics:
+      epic_9:
+        name: "Evaluation & Testing"
+        description: "Create comprehensive evaluations and achieve test coverage goals"
+
+        feature_9_1:
+          name: "Evaluation scenario creation"
+          complexity:
+            composite: 3.0
+            dimensions:
+              technical_complexity: 3
+              scope_size: 3
+              dependencies: 4
+              uncertainty: 3
+              risk: 1
+              testing: 4
+          estimated_days: 3
+
+          task_9_1_1:
+            name: "Explore Vikunja API using read-only tools to understand data structure"
+            complexity:
+              composite: 2.5
+            estimated_days: 0.5
+
+          task_9_1_2:
+            name: "Create 10+ complex evaluation questions covering all tool categories"
+            complexity:
+              composite: 3.2
+            estimated_days: 1.5
+
+          task_9_1_3:
+            name: "Manually verify answers for each question using MCP tools"
+            complexity:
+              composite: 3.0
+            estimated_days: 0.75
+
+          task_9_1_4:
+            name: "Format evaluations in XML and run evaluation harness"
+            complexity:
+              composite: 2.5
+            estimated_days: 0.25
+
+        feature_9_2:
+          name: "Unit and integration testing"
+          complexity:
+            composite: 2.8
+            dimensions:
+              technical_complexity: 3
+              scope_size: 4
+              dependencies: 3
+              uncertainty: 2
+              risk: 2
+              testing: 4
+          estimated_days: 3
+
+          task_9_2_1:
+            name: "Write unit tests for all client methods (mocked API responses)"
+            complexity:
+              composite: 2.8
+            estimated_days: 1.5
+
+          task_9_2_2:
+            name: "Write integration tests for tool workflows (requires test Vikunja instance)"
+            complexity:
+              composite: 3.2
+            estimated_days: 1.0
+
+          task_9_2_3:
+            name: "Achieve 90%+ code coverage and fix gaps"
+            complexity:
+              composite: 2.5
+            estimated_days: 0.5
+
+      epic_10:
+        name: "Documentation & Deployment"
+        description: "Production-ready documentation and deployment configuration"
+
+        feature_10_1:
+          name: "Comprehensive documentation"
+          complexity:
+            composite: 2.3
+            dimensions:
+              technical_complexity: 2
+              scope_size: 3
+              dependencies: 1
+              uncertainty: 2
+              risk: 1
+              testing: 3
+          estimated_days: 2
+
+          task_10_1_1:
+            name: "Write README with setup, configuration, and usage examples"
+            complexity:
+              composite: 2.3
+            estimated_days: 0.75
+
+          task_10_1_2:
+            name: "Document all tool descriptions with parameter details and examples"
+            complexity:
+              composite: 2.0
+            estimated_days: 0.75
+
+          task_10_1_3:
+            name: "Create DEPLOYMENT.md with Claude Code and lazy-mcp instructions"
+            complexity:
+              composite: 2.5
+            estimated_days: 0.5
+
+        feature_10_2:
+          name: "Deployment configuration"
+          complexity:
+            composite: 2.0
+            dimensions:
+              technical_complexity: 2
+              scope_size: 2
+              dependencies: 2
+              uncertainty: 2
+              risk: 1
+              testing: 2
+          estimated_days: 1
+
+          task_10_2_1:
+            name: "Create example ~/.claude.json configuration"
+            complexity:
+              composite: 1.8
+            estimated_days: 0.25
+
+          task_10_2_2:
+            name: "Create lazy-mcp hierarchy file if targeting lazy-mcp deployment"
+            complexity:
+              composite: 2.3
+            estimated_days: 0.5
+
+          task_10_2_3:
+            name: "Test deployment in Claude Code and verify all tools accessible"
+            complexity:
+              composite: 2.0
+            estimated_days: 0.25
+
+risk_register:
+  - id: "R1"
+    description: "Vikunja API version compatibility - API changes between versions"
+    impact: "medium"
+    probability: "low"
+    mitigation: "Target v0.24.0+ as baseline, document version requirements, version-check on initialization"
+
+  - id: "R2"
+    description: "File attachment handling complexity in MCP context"
+    impact: "high"
+    probability: "medium"
+    mitigation: "Spike task created (task_6_1_1) to research MCP file handling patterns before implementation"
+
+  - id: "R3"
+    description: "Rate limiting on Vikunja API may cause tool failures"
+    impact: "medium"
+    probability: "medium"
+    mitigation: "Implement exponential backoff in client, add rate limit detection, provide clear error messages"
+
+  - id: "R4"
+    description: "Large dataset responses exceeding character limits"
+    impact: "medium"
+    probability: "high"
+    mitigation: "25k token limit enforced in utils, pagination mandatory for list operations, concise format option"
+
+  - id: "R5"
+    description: "Circular task dependency creation in relationship tools"
+    impact: "high"
+    probability: "low"
+    mitigation: "Dedicated test for circular dependencies (task_7_1_4), validate relationship graph before creation"
+
+assumptions:
+  - "Vikunja instance is accessible via HTTPS with valid SSL certificate"
+  - "Bearer token authentication is sufficient (no OAuth2 required)"
+  - "API v1 endpoints remain stable across v0.24.0+ releases"
+  - "MCP Python SDK supports async operations for all tool calls"
+  - "Evaluation questions can be answered using read-only API access"
+  - "Standard MCP deployment (stdio) is primary target, lazy-mcp optional"
+
+dependencies:
+  external:
+    - name: "Vikunja API"
+      version: "v0.24.0+"
+      type: "runtime"
+      notes: "REST API must be accessible and authenticated"
+
+    - name: "mcp Python SDK"
+      version: "latest"
+      type: "build/runtime"
+      notes: "Official MCP server SDK"
+
+    - name: "httpx"
+      version: "latest"
+      type: "runtime"
+      notes: "Async HTTP client for API calls"
+
+    - name: "pydantic"
+      version: "v2.x"
+      type: "runtime"
+      notes: "Input validation and schema definition"
+
+  internal:
+    - name: "VikunjiaClient"
+      depended_by: "All tool implementations"
+      notes: "Shared API client must be completed before tool development"
+
+    - name: "Response formatters"
+      depended_by: "All list/get operations"
+      notes: "JSON/Markdown formatters needed for consistent output"
+
+success_criteria:
+  - "All 50+ Vikunja API endpoints covered by MCP tools (tasks, projects, labels, reminders, attachments, relationships, teams)"
+  - "10+ evaluation questions with verified answers in XML format"
+  - "90%+ unit test coverage across all modules"
+  - "Response times <2s for typical operations, <5s for large lists"
+  - "Character limit enforcement prevents context overflow"
+  - "Clear, actionable error messages guide LLM toward correct usage"
+  - "Deployment documentation enables setup in <5 minutes"
+
+technical_notes:
+  pagination:
+    - "Vikunja uses page and per_page query parameters"
+    - "Default page size: 50, max: 100 to balance performance and completeness"
+    - "Always include pagination parameters in list operations"
+
+  response_formats:
+    - "JSON: Structured data for programmatic processing"
+    - "Markdown: Human-readable tables and lists for LLM consumption"
+    - "Concise: Minimal fields (id, title, status) for overview"
+    - "Detailed: Full object with all fields for deep inspection"
+
+  authentication:
+    - "Bearer token passed in Authorization header: 'Bearer {token}'"
+    - "Token stored in environment variable VIKUNJA_TOKEN"
+    - "No token refresh logic needed (static tokens)"
+
+  error_handling:
+    - "HTTP 401: Invalid or expired token - prompt user to check credentials"
+    - "HTTP 403: Insufficient permissions - suggest checking user role"
+    - "HTTP 404: Resource not found - suggest listing available resources"
+    - "HTTP 429: Rate limited - explain backoff and retry strategy"
+    - "Network errors: Suggest checking Vikunja instance availability"
+
+  tool_annotations:
+    read_only: ["get_task", "list_tasks", "list_projects", "list_labels", "list_reminders", "get_task_relations", "list_teams"]
+    destructive: ["delete_task", "delete_project", "delete_label", "delete_reminder", "delete_attachment", "delete_task_relation"]
+    idempotent: ["update_task", "update_project", "add_label_to_task", "assign_task"]
