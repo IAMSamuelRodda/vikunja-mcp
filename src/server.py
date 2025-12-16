@@ -40,9 +40,21 @@ from src.schemas.project_schemas import (
     RemoveLabelFromTaskInput,
     GetTasksByLabelInput
 )
+from src.schemas.advanced_schemas import (
+    AddReminderInput,
+    ListRemindersInput,
+    DeleteReminderInput,
+    CreateRelationInput,
+    GetRelationsInput,
+    DeleteRelationInput,
+    ListTeamsInput,
+    GetTeamMembersInput,
+    AssignTaskInput,
+    ShareProjectInput
+)
 
 # Import tools
-from src.tools import tasks, projects, labels
+from src.tools import tasks, projects, labels, advanced
 
 
 # Initialize MCP server
@@ -67,6 +79,7 @@ async def lifespan():
     tasks.set_client(_client)
     projects.set_client(_client)
     labels.set_client(_client)
+    advanced.set_client(_client)
 
     print(f"✓ Vikunja MCP server initialized")
     print(f"  URL: {_client.base_url}")
@@ -348,6 +361,168 @@ async def remove_label_from_task(params: RemoveLabelFromTaskInput) -> str:
 async def get_tasks_by_label(params: GetTasksByLabelInput) -> str:
     '''Filter tasks by label with pagination support.'''
     return await labels.vikunja_get_tasks_by_label(params)
+
+
+# ============================================================================
+# REMINDER TOOLS
+# ============================================================================
+
+@mcp.tool(
+    name="vikunja_add_reminder",
+    annotations={
+        "title": "Add Task Reminder",
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": False,
+        "openWorldHint": True
+    }
+)
+async def add_reminder(params: AddReminderInput) -> str:
+    '''Add a time-based reminder to a task.'''
+    return await advanced.vikunja_add_reminder(params)
+
+
+@mcp.tool(
+    name="vikunja_list_reminders",
+    annotations={
+        "title": "List Task Reminders",
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True
+    }
+)
+async def list_reminders(params: ListRemindersInput) -> str:
+    '''List all reminders set for a specific task.'''
+    return await advanced.vikunja_list_reminders(params)
+
+
+@mcp.tool(
+    name="vikunja_delete_reminder",
+    annotations={
+        "title": "Delete Task Reminder",
+        "readOnlyHint": False,
+        "destructiveHint": True,
+        "idempotentHint": True,
+        "openWorldHint": True
+    }
+)
+async def delete_reminder(params: DeleteReminderInput) -> str:
+    '''Delete a reminder from a task.'''
+    return await advanced.vikunja_delete_reminder(params)
+
+
+# ============================================================================
+# TASK RELATIONSHIP TOOLS
+# ============================================================================
+
+@mcp.tool(
+    name="vikunja_create_relation",
+    annotations={
+        "title": "Create Task Relationship",
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": False,
+        "openWorldHint": True
+    }
+)
+async def create_relation(params: CreateRelationInput) -> str:
+    '''Create a relationship between two tasks (subtask, parent, blocking, related, etc.).'''
+    return await advanced.vikunja_create_relation(params)
+
+
+@mcp.tool(
+    name="vikunja_get_relations",
+    annotations={
+        "title": "Get Task Relationships",
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True
+    }
+)
+async def get_relations(params: GetRelationsInput) -> str:
+    '''Get all relationships for a task.'''
+    return await advanced.vikunja_get_relations(params)
+
+
+@mcp.tool(
+    name="vikunja_delete_relation",
+    annotations={
+        "title": "Delete Task Relationship",
+        "readOnlyHint": False,
+        "destructiveHint": True,
+        "idempotentHint": True,
+        "openWorldHint": True
+    }
+)
+async def delete_relation(params: DeleteRelationInput) -> str:
+    '''Delete a relationship between two tasks.'''
+    return await advanced.vikunja_delete_relation(params)
+
+
+# ============================================================================
+# TEAM COLLABORATION TOOLS
+# ============================================================================
+
+@mcp.tool(
+    name="vikunja_list_teams",
+    annotations={
+        "title": "List Teams",
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True
+    }
+)
+async def list_teams(params: ListTeamsInput) -> str:
+    '''List all teams accessible to the authenticated user.'''
+    return await advanced.vikunja_list_teams(params)
+
+
+@mcp.tool(
+    name="vikunja_get_team_members",
+    annotations={
+        "title": "Get Team Members",
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True
+    }
+)
+async def get_team_members(params: GetTeamMembersInput) -> str:
+    '''Get all members of a specific team.'''
+    return await advanced.vikunja_get_team_members(params)
+
+
+@mcp.tool(
+    name="vikunja_assign_task",
+    annotations={
+        "title": "Assign Task to User",
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True
+    }
+)
+async def assign_task(params: AssignTaskInput) -> str:
+    '''Assign a task to a user.'''
+    return await advanced.vikunja_assign_task(params)
+
+
+@mcp.tool(
+    name="vikunja_share_project",
+    annotations={
+        "title": "Share Project with Team",
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True
+    }
+)
+async def share_project(params: ShareProjectInput) -> str:
+    '''Share a project with a team with specified permission level (read, read+write, admin).'''
+    return await advanced.vikunja_share_project(params)
 
 
 # ============================================================================
