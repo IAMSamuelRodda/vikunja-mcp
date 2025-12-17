@@ -2,8 +2,14 @@
 OpenBao Secrets Client for MCP Servers.
 
 This module provides a simple interface for MCP servers to read secrets
-from a local OpenBao Agent. It replaces direct .env file reading with
-secure agent-based secret retrieval.
+from a local OpenBao Agent using Arc Forge's secret path pattern.
+
+Secret Path Pattern:
+    secret/{namespace}/{environment}-{type}-{service}-{identifier}
+
+    Examples:
+    - secret/client0/prod-mcp-vikunja-samuel
+    - secret/client0/prod-mcp-joplin-desktop
 
 SECURITY: Environment variable fallback is DISABLED by default.
 Only enable for local development environments, never in production.
@@ -22,6 +28,8 @@ Usage:
 """
 
 import os
+import socket
+import subprocess
 import warnings
 from typing import Optional, Dict, Any
 from functools import lru_cache
@@ -37,6 +45,10 @@ except ImportError:
 # Default port 18200 is the local agent listener (distinct from VPS tunnel on 8200)
 AGENT_ADDR = os.getenv("OPENBAO_AGENT_ADDR", "http://127.0.0.1:18200")
 AGENT_TIMEOUT = float(os.getenv("OPENBAO_AGENT_TIMEOUT", "5.0"))
+
+# Arc Forge secret path configuration
+ARC_CLIENT = os.getenv("ARC_CLIENT", "client0")
+ARC_ENVIRONMENT = os.getenv("ARC_ENVIRONMENT", "prod")
 
 # Development mode detection
 # Set OPENBAO_DEV_MODE=1 to allow env var fallbacks (local dev only)
@@ -67,6 +79,79 @@ def _get_client():
         timeout=AGENT_TIMEOUT,
         headers={"X-Vault-Request": "true"}
     )
+
+
+def _get_git_email() -> Optional[str]:
+    """Get user email from git config."""
+    try:
+        result = subprocess.run(
+            ["git", "config", "user.email"],
+            capture_output=True,
+            text=True,
+            timeout=2
+        )
+        if result.returncode == 0:
+            return result.stdout.strip()
+    except Exception:
+        pass
+    return None
+
+
+def _detect_identifier(service: str) -> str:
+    """
+    Auto-detect identifier for service credential.
+
+    Args:
+        service: Service name (e.g., "vikunja", "joplin")
+
+    Returns:
+        Identifier string (username or hostname)
+
+    Detection strategy:
+    - vikunja: User-scoped → git email username
+    - joplin: Machine-scoped → hostname
+    - default: hostname
+    """
+    if service == "joplin":
+        # Machine-scoped: use hostname
+        return socket.gethostname().split('.')[0]
+
+    elif service == "vikunja":
+        # User-scoped: use git email username
+        email = _get_git_email()
+        if email:
+            return email.split('@')[0]  # "samuel@arcforge.au" → "samuel"
+        # Fallback to system user
+        return os.getenv("USER", "default")
+
+    # Default: hostname
+    return socket.gethostname().split('.')[0]
+
+
+def build_mcp_secret_path(service: str, identifier: Optional[str] = None) -> str:
+    """
+    Build secret path using Arc Forge pattern.
+
+    Pattern: secret/{client}/{environment}-mcp-{service}-{identifier}
+
+    Args:
+        service: Service name (e.g., "vikunja", "joplin")
+        identifier: Optional explicit identifier (auto-detected if not provided)
+
+    Returns:
+        Secret path string (e.g., "client0/prod-mcp-vikunja-samuel")
+
+    Examples:
+        >>> build_mcp_secret_path("vikunja")
+        "client0/prod-mcp-vikunja-samuel"
+
+        >>> build_mcp_secret_path("joplin", "laptop")
+        "client0/prod-mcp-joplin-laptop"
+    """
+    if identifier is None:
+        identifier = _detect_identifier(service)
+
+    return f"{ARC_CLIENT}/{ARC_ENVIRONMENT}-mcp-{service}-{identifier}"
 
 
 def check_agent_health() -> bool:
@@ -136,17 +221,23 @@ def get_secret(path: str, key: Optional[str] = None) -> Any:
     except httpx.ConnectError:
         raise AgentNotRunningError(
             f"Cannot connect to OpenBao Agent at {AGENT_ADDR}. "
-            "Ensure the agent is running: start-openbao-agent"
+            "Start the agent with:\n"
+            "  export BW_SESSION=$(bw unlock --raw)\n"
+            "  start-openbao-mcp"
         )
 
 
 def get_mcp_token(
     service: str,
     dev_fallback: Optional[str] = None,
-    required: bool = True
+    required: bool = True,
+    identifier: Optional[str] = None
 ) -> Optional[str]:
     """
     Get an MCP service token from the OpenBao agent.
+
+    Uses Arc Forge secret path pattern:
+    secret/{client}/{environment}-mcp-{service}-{identifier}
 
     SECURITY: Environment variable fallback is DISABLED by default.
     Fallback only works when OPENBAO_DEV_MODE=1 is set AND dev_fallback
@@ -157,6 +248,7 @@ def get_mcp_token(
         dev_fallback: Environment variable name for dev-only fallback.
                       Only used when OPENBAO_DEV_MODE=1 is set.
         required: If True, raise error when token not found
+        identifier: Optional explicit identifier (auto-detected if not provided)
 
     Returns:
         The token string, or None if not found and not required.
@@ -172,49 +264,74 @@ def get_mcp_token(
 
         # Development: Allow env fallback (requires OPENBAO_DEV_MODE=1)
         token = get_mcp_token("vikunja", dev_fallback="VIKUNJA_TOKEN")
+
+        # Explicit identifier override
+        token = get_mcp_token("vikunja", identifier="kayla")
     """
+    # Build secret path using Arc Forge pattern
+    secret_path = build_mcp_secret_path(service, identifier)
+
     # Try agent first
     try:
-        return get_secret(f"mcp/{service}", "token")
-    except AgentNotRunningError as e:
+        return get_secret(secret_path, "token")
+    except OpenBaoError as e:
+        # Catch all OpenBao errors (agent not running, secret not found, permission denied, etc.)
         # Only allow fallback in dev mode with explicit fallback specified
         if DEV_MODE and dev_fallback:
             token = os.getenv(dev_fallback)
             if token:
                 warnings.warn(
-                    f"[DEV MODE] Using {dev_fallback} env var (agent not running). "
+                    f"[DEV MODE] Using {dev_fallback} env var (agent error: {type(e).__name__}). "
                     "This fallback is disabled in production.",
                     UserWarning
                 )
                 return token
-        if required:
-            raise AgentNotRunningError(
-                f"OpenBao Agent not running at {AGENT_ADDR}. "
-                "Start the agent with: start-openbao-agent"
-            ) from e
-        return None
-    except SecretNotFoundError as e:
-        # Only allow fallback in dev mode with explicit fallback specified
-        if DEV_MODE and dev_fallback:
-            token = os.getenv(dev_fallback)
-            if token:
-                warnings.warn(
-                    f"[DEV MODE] Using {dev_fallback} env var (secret not in agent). "
-                    "This fallback is disabled in production.",
-                    UserWarning
-                )
-                return token
-        if required:
-            raise ValueError(
-                f"Token for '{service}' not found in agent at secret/mcp/{service}. "
-                "Ensure the secret exists in OpenBao."
-            ) from e
-        return None
+
+        # No fallback available - raise appropriate error
+        if isinstance(e, AgentNotRunningError):
+            if required:
+                raise AgentNotRunningError(
+                    f"OpenBao Agent not running at {AGENT_ADDR}. "
+                    "Start the agent with:\n"
+                    "  export BW_SESSION=$(bw unlock --raw)\n"
+                    "  start-openbao-mcp"
+                ) from e
+            return None
+        elif isinstance(e, SecretNotFoundError):
+            if required:
+                raise ValueError(
+                    f"Token for '{service}' not found in agent at secret/{secret_path}. "
+                    "Ensure the secret exists in OpenBao with the correct path pattern: "
+                    f"secret/{ARC_CLIENT}/{ARC_ENVIRONMENT}-mcp-{{service}}-{{identifier}}"
+                ) from e
+            return None
+        else:
+            # Other OpenBaoError (like permission denied)
+            if required:
+                identifier = _detect_identifier(service)
+                raise ValueError(
+                    f"Failed to retrieve token for '{service}' from agent: {e}\n"
+                    f"Expected path: secret/{secret_path}\n\n"
+                    f"To create this secret, connect to your OpenBao server and run:\n"
+                    f"  bao kv put secret/{secret_path} token=\"your-{service}-token\" url=\"https://your-{service}-url\"\n\n"
+                    f"Or for development, enable dev mode:\n"
+                    f"  export OPENBAO_DEV_MODE=1\n"
+                    f"  export VIKUNJA_TOKEN=your-token\n"
+                    f"  export VIKUNJA_URL=https://your-url"
+                ) from e
+            return None
 
 
-def get_mcp_config(service: str, dev_fallbacks: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+def get_mcp_config(
+    service: str,
+    dev_fallbacks: Optional[Dict[str, str]] = None,
+    identifier: Optional[str] = None
+) -> Dict[str, Any]:
     """
     Get full configuration for an MCP service from the OpenBao agent.
+
+    Uses Arc Forge secret path pattern:
+    secret/{client}/{environment}-mcp-{service}-{identifier}
 
     SECURITY: Environment variable fallback is DISABLED by default.
     Fallback only works when OPENBAO_DEV_MODE=1 is set AND dev_fallbacks
@@ -225,6 +342,7 @@ def get_mcp_config(service: str, dev_fallbacks: Optional[Dict[str, str]] = None)
         dev_fallbacks: Dict mapping config keys to env var names for dev-only fallback.
                        Only used when OPENBAO_DEV_MODE=1 is set.
                        e.g., {"token": "VIKUNJA_TOKEN", "url": "VIKUNJA_URL"}
+        identifier: Optional explicit identifier (auto-detected if not provided)
 
     Returns:
         Dict with all config keys for the service.
@@ -238,10 +356,17 @@ def get_mcp_config(service: str, dev_fallbacks: Optional[Dict[str, str]] = None)
             "token": "VIKUNJA_TOKEN",
             "url": "VIKUNJA_URL"
         })
+
+        # Explicit identifier override
+        config = get_mcp_config("vikunja", identifier="kayla")
     """
+    # Build secret path using Arc Forge pattern
+    secret_path = build_mcp_secret_path(service, identifier)
+
     try:
-        return get_secret(f"mcp/{service}")
-    except (AgentNotRunningError, SecretNotFoundError) as e:
+        return get_secret(secret_path)
+    except OpenBaoError as e:
+        # Catch all OpenBao errors (agent not running, secret not found, permission denied, etc.)
         # Only allow fallback in dev mode with explicit fallbacks specified
         if DEV_MODE and dev_fallbacks:
             config = {}
@@ -251,7 +376,7 @@ def get_mcp_config(service: str, dev_fallbacks: Optional[Dict[str, str]] = None)
                     config[key] = value
             if config:
                 warnings.warn(
-                    f"[DEV MODE] Using environment variables for {service} (agent unavailable). "
+                    f"[DEV MODE] Using environment variables for {service} (agent error: {type(e).__name__}). "
                     "This fallback is disabled in production.",
                     UserWarning
                 )
