@@ -16,7 +16,7 @@ from contextlib import asynccontextmanager
 from mcp.server.fastmcp import FastMCP, Context
 
 # Import client
-from src.client.vikunja_client import VikunjiaClient
+from src.client.vikunja_client import VikunjaClient
 from src.utils.openbao_secrets import is_agent_available, DEV_MODE
 
 # Import schemas
@@ -62,7 +62,7 @@ from src.tools import tasks, projects, labels, advanced
 mcp = FastMCP("vikunja_mcp")
 
 # Global client instance
-_client: VikunjiaClient = None
+_client: VikunjaClient = None
 
 
 @asynccontextmanager
@@ -76,7 +76,7 @@ async def lifespan(app):
     global _client
 
     # Initialize Vikunja client
-    _client = VikunjiaClient()
+    _client = VikunjaClient()
     tasks.set_client(_client)
     projects.set_client(_client)
     labels.set_client(_client)

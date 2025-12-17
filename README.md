@@ -9,13 +9,16 @@ Python-based MCP server providing comprehensive integration with Vikunja task ma
 - **Labels & Filtering**: Apply labels and filter tasks with AND/OR logic
 - **Advanced Features**: Reminders, attachments, task relationships, and team collaboration
 - **Token-Optimized**: Configurable response formats (JSON/Markdown) with character limits
-- **Authentication**: Secure bearer token authentication
+- **Secure Credentials**: OpenBao agent integration with Arc Forge secret path pattern
+- **Multi-User Support**: Auto-detection of user credentials from git email
 
 ## Prerequisites
 
 - Python 3.10+
 - Vikunja instance v0.24.0+ with API access
 - Bearer token for authentication
+- OpenBao agent for secure credential management (production)
+  - Or `OPENBAO_DEV_MODE=1` with environment variables (development)
 
 ## Installation
 
@@ -37,20 +40,54 @@ pip install -r requirements.txt
 
 ## Configuration
 
-1. Copy the example environment file:
-```bash
-cp .env.example .env
+### Production (OpenBao Agent - Recommended)
+
+Credentials are automatically retrieved from the OpenBao agent using the Arc Forge secret path pattern:
+
+```
+secret/{namespace}/{environment}-mcp-vikunja-{identifier}
 ```
 
-2. Edit `.env` with your Vikunja instance details:
+For example:
+- `secret/client0/prod-mcp-vikunja-iamsamuelrodda` (user-scoped)
+- `secret/client0/prod-mcp-vikunja-kayla` (different user)
+
+The identifier is auto-detected from your git email (`git config user.email`).
+
+**Store your credentials in OpenBao:**
+
 ```bash
-VIKUNJA_URL=https://your-vikunja-instance.example.com
-VIKUNJA_TOKEN=your_bearer_token_here
+# For the current user
+bao kv put secret/client0/prod-mcp-vikunja-$(git config user.email | cut -d@ -f1) \
+  token="your-vikunja-token" \
+  url="https://tasks.rodda.xyz/"
+
+# For a specific user
+bao kv put secret/client0/prod-mcp-vikunja-kayla \
+  token="kayla-token" \
+  url="https://tasks.rodda.xyz/"
 ```
 
-**For do-vps-prod instance:**
-- URL: (configured on do-vps-prod)
-- Token: Bearer token for samuel@arcforge.au
+The MCP server will automatically connect to the OpenBao agent at `http://127.0.0.1:18200`.
+
+### Development (Environment Variables)
+
+For local development only, enable dev mode to use environment variables:
+
+```bash
+export OPENBAO_DEV_MODE=1
+export VIKUNJA_TOKEN=your_bearer_token_here
+export VIKUNJA_URL=https://your-vikunja-instance.example.com
+```
+
+**WARNING**: Environment variable fallback is disabled in production for security.
+
+### Configuration Variables
+
+- `ARC_CLIENT`: Arc Forge namespace (default: `client0`)
+- `ARC_ENVIRONMENT`: Environment prefix (default: `prod`)
+- `OPENBAO_AGENT_ADDR`: Agent address (default: `http://127.0.0.1:18200`)
+- `OPENBAO_DEV_MODE`: Set to `1` to enable env var fallback for development
 
 ## Usage
 
@@ -290,7 +327,7 @@ vikunja-mcp/
 - `vikunja_assign_task` - Assign task to a user
 - `vikunja_share_project` - Share project with team (read, read+write, admin permissions)
 
-**Total: 26 MCP tools**
+**Total: 27 MCP tools**
 
 ## Response Formats
 
@@ -324,7 +361,7 @@ open htmlcov/index.html
 
 **Test Coverage**: 85%+ coverage across all modules
 - Unit tests: Client, utilities, schemas
-- Integration tests: All 26 MCP tools
+- Integration tests: All 27 MCP tools
 - Evaluation scenarios: 20 complex workflows
 
 ### Code Quality

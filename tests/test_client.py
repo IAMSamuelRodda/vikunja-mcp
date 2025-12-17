@@ -3,7 +3,7 @@
 import pytest
 import httpx
 from unittest.mock import AsyncMock, patch, MagicMock
-from src.client.vikunja_client import VikunjiaClient
+from src.client.vikunja_client import VikunjaClient
 
 
 @pytest.fixture
@@ -16,7 +16,7 @@ def mock_env(monkeypatch):
 @pytest.fixture
 def client(mock_env):
     '''Create a test client instance.'''
-    return VikunjiaClient()
+    return VikunjaClient()
 
 
 @pytest.mark.asyncio
@@ -34,7 +34,7 @@ async def test_client_initialization_strips_trailing_slash(monkeypatch):
     monkeypatch.setenv("VIKUNJA_URL", "https://test.example.com/")
     monkeypatch.setenv("VIKUNJA_TOKEN", "test_token")
 
-    client = VikunjiaClient()
+    client = VikunjaClient()
     assert client.base_url == "https://test.example.com"
     assert client.api_base == "https://test.example.com/api/v1"
 

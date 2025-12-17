@@ -6,7 +6,7 @@ and team collaboration.
 '''
 
 from typing import Dict, Any
-from src.client.vikunja_client import VikunjiaClient
+from src.client.vikunja_client import VikunjaClient
 from src.schemas.advanced_schemas import (
     AddReminderInput,
     ListRemindersInput,
@@ -29,10 +29,10 @@ from src.utils.formatters import (
 
 
 # Global client instance
-_client: VikunjiaClient = None
+_client: VikunjaClient = None
 
 
-def set_client(client: VikunjiaClient):
+def set_client(client: VikunjaClient):
     '''Set the global Vikunja client instance.'''
     global _client
     _client = client

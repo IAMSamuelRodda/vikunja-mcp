@@ -29,7 +29,7 @@ MAX_RETRIES = 3
 RETRY_DELAY = 1.0  # Initial delay in seconds for exponential backoff
 
 
-class VikunjiaClient:
+class VikunjaClient:
     '''
     Async HTTP client for Vikunja API.
 
