@@ -17,6 +17,7 @@ from mcp.server.fastmcp import FastMCP, Context
 
 # Import client
 from src.client.vikunja_client import VikunjiaClient
+from src.utils.openbao_secrets import is_agent_available
 
 # Import schemas
 from src.schemas.task_schemas import (
@@ -81,9 +82,13 @@ async def lifespan(app):
     labels.set_client(_client)
     advanced.set_client(_client)
 
+    # Determine credential source for logging
+    cred_source = "OpenBao Agent" if is_agent_available() else "Environment Variables"
+
     print(f"✓ Vikunja MCP server initialized")
     print(f"  URL: {_client.base_url}")
     print(f"  API: {_client.api_base}")
+    print(f"  Credentials: {cred_source}")
 
     yield {"client": _client}
 
