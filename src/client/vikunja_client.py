@@ -4,6 +4,10 @@ Vikunja API Client.
 This module provides an async HTTP client wrapper for interacting with the
 Vikunja REST API (v0.24.0+). It handles authentication, error handling, rate
 limiting, and request/response management.
+
+Credential Resolution Order:
+1. OpenBao Agent (if running) - secure, memory-only caching
+2. Environment variables - fallback for development/migration
 '''
 
 import os
@@ -11,6 +15,12 @@ import asyncio
 from typing import Any, Dict, Optional
 import httpx
 from src.utils.errors import handle_api_error
+from src.utils.openbao_secrets import (
+    get_mcp_config,
+    is_agent_available,
+    AgentNotRunningError,
+    SecretNotFoundError
+)
 
 # Constants
 API_VERSION = "v1"
@@ -26,27 +36,61 @@ class VikunjiaClient:
     Handles bearer token authentication, error responses, rate limiting with
     exponential backoff, and provides a consistent interface for all API calls.
 
+    Credentials are resolved in order:
+    1. OpenBao Agent at http://127.0.0.1:8200 (if running)
+    2. VIKUNJA_URL and VIKUNJA_TOKEN environment variables (fallback)
+
     Attributes:
-        base_url (str): Base URL of the Vikunja instance (from VIKUNJA_URL env var)
-        token (str): Bearer token for authentication (from VIKUNJA_TOKEN env var)
+        base_url (str): Base URL of the Vikunja instance
+        token (str): Bearer token for authentication
         client (httpx.AsyncClient): Reusable async HTTP client
     '''
 
     def __init__(self):
-        '''Initialize the Vikunja API client with configuration from environment.'''
-        self.base_url = os.getenv("VIKUNJA_URL", "").rstrip("/")
-        self.token = os.getenv("VIKUNJA_TOKEN", "")
+        '''Initialize the Vikunja API client with configuration from OpenBao or environment.'''
+        # Try to get config from OpenBao agent first, fallback to env vars
+        config = self._load_config()
+
+        self.base_url = config.get("url", "").rstrip("/")
+        self.token = config.get("token", "")
 
         if not self.base_url:
-            raise ValueError("VIKUNJA_URL environment variable is required")
+            raise ValueError(
+                "Vikunja URL not found. "
+                "Set VIKUNJA_URL env var or configure secret/mcp/vikunja in OpenBao."
+            )
         if not self.token:
-            raise ValueError("VIKUNJA_TOKEN environment variable is required")
+            raise ValueError(
+                "Vikunja token not found. "
+                "Set VIKUNJA_TOKEN env var or configure secret/mcp/vikunja in OpenBao."
+            )
 
         # Build API base URL
         self.api_base = f"{self.base_url}/api/{API_VERSION}"
 
         # Initialize async client (will be created lazily)
         self._client: Optional[httpx.AsyncClient] = None
+
+    def _load_config(self) -> Dict[str, str]:
+        '''
+        Load configuration from OpenBao agent or environment variables.
+
+        Returns:
+            Dict with 'url' and 'token' keys.
+        '''
+        try:
+            # Try OpenBao agent first (secure path)
+            config = get_mcp_config("vikunja", env_fallbacks={
+                "token": "VIKUNJA_TOKEN",
+                "url": "VIKUNJA_URL"
+            })
+            return config
+        except (AgentNotRunningError, SecretNotFoundError):
+            # Fall back to pure environment variables
+            return {
+                "url": os.getenv("VIKUNJA_URL", ""),
+                "token": os.getenv("VIKUNJA_TOKEN", "")
+            }
 
     async def _get_client(self) -> httpx.AsyncClient:
         '''Get or create the async HTTP client.
