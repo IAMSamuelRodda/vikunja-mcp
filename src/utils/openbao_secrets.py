@@ -5,13 +5,19 @@ This module provides a simple interface for MCP servers to read secrets
 from a local OpenBao Agent. It replaces direct .env file reading with
 secure agent-based secret retrieval.
 
+SECURITY: Environment variable fallback is DISABLED by default.
+Only enable for local development environments, never in production.
+
 Usage:
     from src.utils.openbao_secrets import get_mcp_token, get_mcp_config
 
-    # Get MCP token with fallback to env var
-    token = get_mcp_token("vikunja", env_fallback="VIKUNJA_TOKEN")
+    # Production: Agent only (no fallback)
+    token = get_mcp_token("vikunja")
 
-    # Get full MCP config (token, url, etc.)
+    # Development only: Allow env var fallback (explicit opt-in)
+    token = get_mcp_token("vikunja", dev_fallback="VIKUNJA_TOKEN")
+
+    # Get full MCP config
     config = get_mcp_config("vikunja")
 """
 
@@ -30,6 +36,10 @@ except ImportError:
 # Configuration
 AGENT_ADDR = os.getenv("OPENBAO_AGENT_ADDR", "http://127.0.0.1:8200")
 AGENT_TIMEOUT = float(os.getenv("OPENBAO_AGENT_TIMEOUT", "5.0"))
+
+# Development mode detection
+# Set OPENBAO_DEV_MODE=1 to allow env var fallbacks (local dev only)
+DEV_MODE = os.getenv("OPENBAO_DEV_MODE", "").lower() in ("1", "true", "yes")
 
 
 class OpenBaoError(Exception):
@@ -131,106 +141,117 @@ def get_secret(path: str, key: Optional[str] = None) -> Any:
 
 def get_mcp_token(
     service: str,
-    env_fallback: Optional[str] = None,
+    dev_fallback: Optional[str] = None,
     required: bool = True
 ) -> Optional[str]:
     """
-    Get an MCP service token from the agent, with optional env var fallback.
+    Get an MCP service token from the OpenBao agent.
 
-    This is a convenience function for MCP servers that provides:
-    - Agent-first lookup (secure)
-    - Optional fallback to environment variable (for development/migration)
-    - Clear error messages
+    SECURITY: Environment variable fallback is DISABLED by default.
+    Fallback only works when OPENBAO_DEV_MODE=1 is set AND dev_fallback
+    is specified. This ensures production environments always use the agent.
 
     Args:
         service: Service name (e.g., "vikunja", "joplin")
-        env_fallback: Optional environment variable name for fallback
+        dev_fallback: Environment variable name for dev-only fallback.
+                      Only used when OPENBAO_DEV_MODE=1 is set.
         required: If True, raise error when token not found
 
     Returns:
         The token string, or None if not found and not required.
 
     Raises:
-        AgentNotRunningError: If agent not running and no fallback
-        SecretNotFoundError: If secret not found and no fallback
-        ValueError: If required=True and token not found anywhere
+        AgentNotRunningError: If agent not running (production)
+        SecretNotFoundError: If secret not found (production)
+        ValueError: If required=True and token not found
 
     Example:
-        # Secure: agent only
+        # Production: Agent only (will fail if agent not running)
         token = get_mcp_token("vikunja")
 
-        # With fallback for development
-        token = get_mcp_token("vikunja", env_fallback="VIKUNJA_TOKEN")
+        # Development: Allow env fallback (requires OPENBAO_DEV_MODE=1)
+        token = get_mcp_token("vikunja", dev_fallback="VIKUNJA_TOKEN")
     """
     # Try agent first
     try:
         return get_secret(f"mcp/{service}", "token")
-    except AgentNotRunningError:
-        if env_fallback:
-            token = os.getenv(env_fallback)
+    except AgentNotRunningError as e:
+        # Only allow fallback in dev mode with explicit fallback specified
+        if DEV_MODE and dev_fallback:
+            token = os.getenv(dev_fallback)
             if token:
                 warnings.warn(
-                    f"Using {env_fallback} env var (agent not running). "
-                    "This is less secure than agent-based secrets.",
+                    f"[DEV MODE] Using {dev_fallback} env var (agent not running). "
+                    "This fallback is disabled in production.",
                     UserWarning
                 )
                 return token
         if required:
-            raise
+            raise AgentNotRunningError(
+                f"OpenBao Agent not running at {AGENT_ADDR}. "
+                "Start the agent with: start-openbao-agent"
+            ) from e
         return None
-    except SecretNotFoundError:
-        if env_fallback:
-            token = os.getenv(env_fallback)
+    except SecretNotFoundError as e:
+        # Only allow fallback in dev mode with explicit fallback specified
+        if DEV_MODE and dev_fallback:
+            token = os.getenv(dev_fallback)
             if token:
                 warnings.warn(
-                    f"Using {env_fallback} env var (secret not in agent). "
-                    "Consider migrating to agent-based secrets.",
+                    f"[DEV MODE] Using {dev_fallback} env var (secret not in agent). "
+                    "This fallback is disabled in production.",
                     UserWarning
                 )
                 return token
         if required:
             raise ValueError(
-                f"Token for '{service}' not found in agent or environment. "
-                f"Ensure secret exists at secret/mcp/{service}"
-            )
+                f"Token for '{service}' not found in agent at secret/mcp/{service}. "
+                "Ensure the secret exists in OpenBao."
+            ) from e
         return None
 
 
-def get_mcp_config(service: str, env_fallbacks: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+def get_mcp_config(service: str, dev_fallbacks: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
     """
-    Get full configuration for an MCP service.
+    Get full configuration for an MCP service from the OpenBao agent.
 
-    Returns all keys stored for the service, not just the token.
-    Useful for services that need URL, token, and other config.
+    SECURITY: Environment variable fallback is DISABLED by default.
+    Fallback only works when OPENBAO_DEV_MODE=1 is set AND dev_fallbacks
+    is specified. This ensures production environments always use the agent.
 
     Args:
         service: Service name (e.g., "vikunja")
-        env_fallbacks: Optional dict mapping config keys to env var names
+        dev_fallbacks: Dict mapping config keys to env var names for dev-only fallback.
+                       Only used when OPENBAO_DEV_MODE=1 is set.
                        e.g., {"token": "VIKUNJA_TOKEN", "url": "VIKUNJA_URL"}
 
     Returns:
         Dict with all config keys for the service.
 
     Example:
-        config = get_mcp_config("vikunja", {
+        # Production: Agent only
+        config = get_mcp_config("vikunja")
+
+        # Development: Allow env fallback (requires OPENBAO_DEV_MODE=1)
+        config = get_mcp_config("vikunja", dev_fallbacks={
             "token": "VIKUNJA_TOKEN",
             "url": "VIKUNJA_URL"
         })
-        # Returns: {"token": "xxx", "url": "https://...", ...}
     """
     try:
         return get_secret(f"mcp/{service}")
-    except (AgentNotRunningError, SecretNotFoundError):
-        if env_fallbacks:
+    except (AgentNotRunningError, SecretNotFoundError) as e:
+        # Only allow fallback in dev mode with explicit fallbacks specified
+        if DEV_MODE and dev_fallbacks:
             config = {}
-            for key, env_var in env_fallbacks.items():
+            for key, env_var in dev_fallbacks.items():
                 value = os.getenv(env_var)
                 if value:
                     config[key] = value
             if config:
                 warnings.warn(
-                    f"Using environment variables for {service} (agent unavailable). "
-                    "This is less secure than agent-based secrets.",
+                    f"[DEV MODE] Using environment variables for {service} (agent unavailable). "
+                    "This fallback is disabled in production.",
                     UserWarning
                 )
                 return config

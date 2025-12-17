@@ -11,7 +11,8 @@ from src.utils.openbao_secrets import (
     is_agent_available,
     OpenBaoError,
     AgentNotRunningError,
-    SecretNotFoundError
+    SecretNotFoundError,
+    DEV_MODE
 )
 
 __all__ = [
@@ -25,5 +26,6 @@ __all__ = [
     "is_agent_available",
     "OpenBaoError",
     "AgentNotRunningError",
-    "SecretNotFoundError"
+    "SecretNotFoundError",
+    "DEV_MODE"
 ]
