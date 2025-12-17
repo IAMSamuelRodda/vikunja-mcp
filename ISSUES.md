@@ -4,6 +4,67 @@ This document tracks flagged items, required spikes, risks, and blockers identif
 
 ---
 
+## Active Bugs
+
+### BUG-001: Lazy-MCP Reports Incorrect Tool Count (27 actual vs 23 reported)
+
+**Status**: 🔴 Open
+**Priority**: P2 - Medium
+**Discovered**: 2025-12-17
+**Affects**: Tool accessibility via lazy-mcp proxy
+
+**Description:**
+When this Vikunja MCP server is accessed through the lazy-mcp-proxy, the hierarchy system incorrectly reports 23 tools instead of the actual 27 tools registered by the server.
+
+**Evidence:**
+- Server correctly registers 27 tools (verified via `FastMCP.list_tools()`)
+- All 27 tools defined with `@mcp.tool` decorators in `src/server.py`
+- Lazy-mcp hierarchy reports "vikunja: 23 tools"
+- Systematic review of 10 other MCP servers shows NO similar discrepancy
+- Issue is specific to vikunja-mcp, not a systemic lazy-mcp bug
+
+**Missing Tools (4):**
+Need to identify which 4 of the 27 tools are not being discovered by lazy-mcp.
+
+**All 27 Tools (Verified in Server):**
+```
+vikunja_add_label_to_task, vikunja_add_reminder, vikunja_assign_task,
+vikunja_create_label, vikunja_create_project, vikunja_create_relation,
+vikunja_create_task, vikunja_delete_label, vikunja_delete_project,
+vikunja_delete_relation, vikunja_delete_reminder, vikunja_delete_task,
+vikunja_get_project_tasks, vikunja_get_relations, vikunja_get_task,
+vikunja_get_tasks_by_label, vikunja_get_team_members, vikunja_list_labels,
+vikunja_list_projects, vikunja_list_reminders, vikunja_list_tasks,
+vikunja_list_teams, vikunja_move_task_to_project, vikunja_remove_label_from_task,
+vikunja_share_project, vikunja_update_project, vikunja_update_task
+```
+
+**Impact:**
+- 4 tools may be inaccessible via lazy-mcp proxy
+- Inaccurate tool count in hierarchy overview
+- Potential "tool not found" errors for missing tools
+
+**Root Cause Hypotheses:**
+1. Tool name length/pattern unique to these 4 tools
+2. Tool description or parameter complexity triggers discovery filter
+3. Specific tool decorator pattern not recognized by lazy-mcp
+4. Timeout during discovery fetches only first 23 tools alphabetically
+
+**Investigation Steps:**
+1. Query lazy-mcp to list all vikunja tools it knows about
+2. Compare against all 27 to identify which 4 are missing
+3. Analyze common patterns in missing tools (name, params, description)
+4. Test if issue persists with direct MCP protocol connection (bypass lazy-mcp)
+
+**Workaround:**
+Use direct MCP connection to vikunja server (not through lazy-mcp proxy) until resolved.
+
+**Related:**
+- vikunja-mcp server: `/home/x-forge/.claude/mcp-servers/vikunja/src/server.py`
+- MCP Server Review: `/home/x-forge/repos/2-areas/lazy-mcp-preload/MCP_SERVER_REVIEW.md`
+
+---
+
 ## Flagged Items Requiring Attention
 
 ### High-Complexity Items (>3.0)
