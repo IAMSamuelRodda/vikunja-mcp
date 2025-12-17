@@ -34,7 +34,8 @@ except ImportError:
 
 
 # Configuration
-AGENT_ADDR = os.getenv("OPENBAO_AGENT_ADDR", "http://127.0.0.1:8200")
+# Default port 18200 is the local agent listener (distinct from VPS tunnel on 8200)
+AGENT_ADDR = os.getenv("OPENBAO_AGENT_ADDR", "http://127.0.0.1:18200")
 AGENT_TIMEOUT = float(os.getenv("OPENBAO_AGENT_TIMEOUT", "5.0"))
 
 # Development mode detection
