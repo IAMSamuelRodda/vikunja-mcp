@@ -7,7 +7,7 @@ create, read, update, delete, and list operations with filtering.
 
 from typing import Dict, Any
 import json
-from src.client.vikunja_client import VikunjiaClient
+from src.client.vikunja_client import VikunjaClient
 from src.schemas.task_schemas import (
     CreateTaskInput,
     GetTaskInput,
@@ -28,10 +28,10 @@ from src.utils.pagination import build_pagination_response
 
 
 # Global client instance (will be initialized in server.py)
-_client: VikunjiaClient = None
+_client: VikunjaClient = None
 
 
-def set_client(client: VikunjiaClient):
+def set_client(client: VikunjaClient):
     '''Set the global Vikunja client instance.'''
     global _client
     _client = client

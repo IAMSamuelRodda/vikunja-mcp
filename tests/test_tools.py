@@ -2,7 +2,7 @@
 
 import pytest
 from unittest.mock import AsyncMock, patch
-from src.client.vikunja_client import VikunjiaClient
+from src.client.vikunja_client import VikunjaClient
 from src.tools import tasks, projects, labels, advanced
 from src.schemas.task_schemas import CreateTaskInput, GetTaskInput, ListTasksInput, UpdateTaskInput, DeleteTaskInput
 from src.schemas.project_schemas import CreateProjectInput, CreateLabelInput, AddLabelToTaskInput
@@ -12,7 +12,7 @@ from src.schemas.advanced_schemas import AddReminderInput, CreateRelationInput, 
 @pytest.fixture
 def mock_client():
     '''Create a mock Vikunja client.'''
-    client = AsyncMock(spec=VikunjiaClient)
+    client = AsyncMock(spec=VikunjaClient)
     tasks.set_client(client)
     projects.set_client(client)
     labels.set_client(client)
