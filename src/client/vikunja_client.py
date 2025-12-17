@@ -73,24 +73,23 @@ class VikunjiaClient:
 
     def _load_config(self) -> Dict[str, str]:
         '''
-        Load configuration from OpenBao agent or environment variables.
+        Load configuration from OpenBao agent.
+
+        SECURITY: Environment variable fallback only works when
+        OPENBAO_DEV_MODE=1 is set. Production always requires the agent.
 
         Returns:
             Dict with 'url' and 'token' keys.
+
+        Raises:
+            AgentNotRunningError: If agent not running (production)
+            SecretNotFoundError: If secret not found (production)
         '''
-        try:
-            # Try OpenBao agent first (secure path)
-            config = get_mcp_config("vikunja", env_fallbacks={
-                "token": "VIKUNJA_TOKEN",
-                "url": "VIKUNJA_URL"
-            })
-            return config
-        except (AgentNotRunningError, SecretNotFoundError):
-            # Fall back to pure environment variables
-            return {
-                "url": os.getenv("VIKUNJA_URL", ""),
-                "token": os.getenv("VIKUNJA_TOKEN", "")
-            }
+        # Try OpenBao agent (with dev-only fallback if OPENBAO_DEV_MODE=1)
+        return get_mcp_config("vikunja", dev_fallbacks={
+            "token": "VIKUNJA_TOKEN",
+            "url": "VIKUNJA_URL"
+        })
 
     async def _get_client(self) -> httpx.AsyncClient:
         '''Get or create the async HTTP client.
