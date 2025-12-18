@@ -101,7 +101,7 @@ async def vikunja_create_task(params: CreateTaskInput) -> str:
 
         # Make API request
         response = await _client.request(
-            "POST",
+            "PUT",
             f"projects/{params.project_id}/tasks",
             json_data=payload
         )
