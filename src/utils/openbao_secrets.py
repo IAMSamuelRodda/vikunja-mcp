@@ -124,8 +124,12 @@ def _detect_identifier(service: str) -> str:
         # Fallback to system user
         return os.getenv("USER", "default")
 
-    # Default: hostname
-    return socket.gethostname().split('.')[0]
+    # Default: user-scoped (git email username)
+    email = _get_git_email()
+    if email:
+        return email.split('@')[0]  # "samuel@arcforge.au" → "samuel"
+    # Fallback to system user
+    return os.getenv("USER", "default")
 
 
 def build_mcp_secret_path(service: str, identifier: Optional[str] = None) -> str:
@@ -400,3 +404,178 @@ def is_agent_available() -> bool:
 
 # Convenience aliases
 read_secret = get_secret
+
+
+# =============================================================================
+# Deferred Credential Loading (for FastMCP lifespan pattern)
+# =============================================================================
+
+
+class DeferredCredentialLoader:
+    """
+    Deferred credential loader for MCP servers.
+
+    This class delays credential loading until the lifespan context is entered,
+    preventing import-time failures when the OpenBao agent isn't running.
+
+    Usage:
+        # At module level (no I/O)
+        _stripe_loader = DeferredCredentialLoader(
+            "stripe",
+            "api_key",
+            dev_fallback="STRIPE_API_KEY"
+        )
+
+        @asynccontextmanager
+        async def lifespan(app):
+            # Load credentials here (fails fast if unavailable)
+            api_key = _stripe_loader.load()
+            stripe.api_key = api_key
+            print("MCP_SERVER_READY", file=sys.stderr)
+            yield
+
+    Error codes printed to stderr for lazy-mcp detection:
+        - OPENBAO_AGENT_NOT_RUNNING: Agent not responding
+        - SECRET_NOT_FOUND: Secret path doesn't exist
+        - SECRET_PERMISSION_DENIED: No access to secret
+        - SECRET_INVALID_TOKEN: Token expired or invalid
+        - SOURCE_ENV: Using environment variable fallback
+    """
+
+    def __init__(
+        self,
+        service: str,
+        key: str = "token",
+        dev_fallback: Optional[str] = None,
+        identifier: Optional[str] = None
+    ):
+        """
+        Initialize deferred loader.
+
+        Args:
+            service: Service name (e.g., "stripe", "vikunja")
+            key: Key within the secret data (default: "token")
+            dev_fallback: Environment variable name for dev-only fallback
+            identifier: Optional explicit identifier (auto-detected if not provided)
+        """
+        self.service = service
+        self.key = key
+        self.dev_fallback = dev_fallback
+        self.identifier = identifier
+        self._cached_value: Optional[str] = None
+        self._source: Optional[str] = None
+        self._loaded = False
+
+    def is_available(self) -> bool:
+        """
+        Check if credential can be loaded (either from agent or dev fallback).
+
+        Returns:
+            True if credential is available from either source.
+        """
+        try:
+            self.load()
+            return True
+        except (OpenBaoError, ValueError):
+            return False
+
+    def get_source(self) -> Optional[str]:
+        """Get the source of the credential after loading."""
+        return self._source
+
+    def load(self) -> str:
+        """
+        Load the credential from OpenBao or dev fallback.
+
+        Returns:
+            The credential value.
+
+        Raises:
+            AgentNotRunningError: If agent not running and no fallback
+            SecretNotFoundError: If secret not found and no fallback
+            ValueError: If credential cannot be retrieved
+        """
+        if self._loaded and self._cached_value:
+            return self._cached_value
+
+        secret_path = build_mcp_secret_path(self.service, self.identifier)
+
+        try:
+            self._cached_value = get_secret(secret_path, self.key)
+            self._source = "SOURCE_OPENBAO"
+            self._loaded = True
+            return self._cached_value
+
+        except OpenBaoError as e:
+            # Try dev fallback if available
+            if DEV_MODE and self.dev_fallback:
+                value = os.getenv(self.dev_fallback)
+                if value:
+                    self._cached_value = value
+                    self._source = "SOURCE_ENV"
+                    self._loaded = True
+                    import sys
+                    print(
+                        f"[DEV MODE] Using {self.dev_fallback} env var "
+                        f"(agent error: {type(e).__name__}). "
+                        "This fallback is disabled in production.",
+                        file=sys.stderr
+                    )
+                    return self._cached_value
+
+            # Output structured error for lazy-mcp detection
+            import sys
+            error_code = self._map_error_code(e)
+            error_json = {
+                "error_code": error_code,
+                "error_message": str(e),
+                "service": self.service,
+                "secret_path": secret_path
+            }
+            import json
+            print(f"OPENBAO_ERROR:{json.dumps(error_json)}", file=sys.stderr)
+
+            raise
+
+    def _map_error_code(self, error: OpenBaoError) -> str:
+        """Map OpenBaoError to error code string."""
+        if isinstance(error, AgentNotRunningError):
+            return "OPENBAO_AGENT_NOT_RUNNING"
+        elif isinstance(error, SecretNotFoundError):
+            return "SECRET_NOT_FOUND"
+        else:
+            error_str = str(error).lower()
+            if "permission denied" in error_str or "403" in error_str:
+                return "SECRET_PERMISSION_DENIED"
+            elif "invalid token" in error_str or "token expired" in error_str:
+                return "SECRET_INVALID_TOKEN"
+            return "OPENBAO_AGENT_NOT_RUNNING"
+
+
+def check_agent_status() -> Dict[str, Any]:
+    """
+    Check OpenBao agent status and return structured result.
+
+    Returns:
+        Dict with 'available', 'error_code', 'error_message' keys.
+
+    This is useful for lifespan context to check availability before
+    attempting to load credentials.
+    """
+    result = {
+        "available": False,
+        "error_code": None,
+        "error_message": None
+    }
+
+    try:
+        if check_agent_health():
+            result["available"] = True
+        else:
+            result["error_code"] = "OPENBAO_AGENT_NOT_RUNNING"
+            result["error_message"] = f"Agent not healthy at {AGENT_ADDR}"
+    except Exception as e:
+        result["error_code"] = "OPENBAO_AGENT_NOT_RUNNING"
+        result["error_message"] = str(e)
+
+    return result
