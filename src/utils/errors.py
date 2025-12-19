@@ -32,6 +32,12 @@ def handle_api_error(e: Exception) -> str:
         ...     return handle_api_error(e)
         "Error: Resource not found. Please check the ID is correct and try listing available resources first."
     '''
+    # Check for credential/OpenBao errors first (before generic errors)
+    error_str = str(e).lower()
+    if isinstance(e, ValueError) and ("openbao" in error_str or "token" in error_str or "agent" in error_str):
+        # Pass through the detailed ValueError from credential functions
+        return f"Error: {str(e)}"
+
     if isinstance(e, httpx.HTTPStatusError):
         status = e.response.status_code
 
