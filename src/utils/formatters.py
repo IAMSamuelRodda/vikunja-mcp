@@ -38,6 +38,60 @@ def format_timestamp(timestamp_str: str) -> str:
         return timestamp_str  # Return original if parsing fails
 
 
+def format_rrule(rrule: str) -> str:
+    '''
+    Convert RFC 5545 RRULE string to human-readable format.
+
+    Args:
+        rrule (str): RRULE string (e.g., "FREQ=DAILY;INTERVAL=1")
+
+    Returns:
+        str: Human-readable recurrence description
+    '''
+    if not rrule:
+        return ""
+
+    # Parse RRULE components
+    parts = {}
+    for part in rrule.split(';'):
+        if '=' in part:
+            key, value = part.split('=', 1)
+            parts[key.upper()] = value
+
+    freq = parts.get('FREQ', '').upper()
+    interval = int(parts.get('INTERVAL', '1'))
+
+    # Build human-readable description
+    freq_map = {
+        'DAILY': ('day', 'days'),
+        'WEEKLY': ('week', 'weeks'),
+        'MONTHLY': ('month', 'months'),
+        'YEARLY': ('year', 'years'),
+    }
+
+    if freq not in freq_map:
+        return rrule  # Return raw if unknown frequency
+
+    singular, plural = freq_map[freq]
+    if interval == 1:
+        base = f"Every {singular}"
+    else:
+        base = f"Every {interval} {plural}"
+
+    # Add day details for weekly
+    if freq == 'WEEKLY' and 'BYDAY' in parts:
+        day_map = {'MO': 'Mon', 'TU': 'Tue', 'WE': 'Wed', 'TH': 'Thu', 'FR': 'Fri', 'SA': 'Sat', 'SU': 'Sun'}
+        days = [day_map.get(d, d) for d in parts['BYDAY'].split(',')]
+        base += f" on {', '.join(days)}"
+
+    # Add day details for monthly
+    if freq == 'MONTHLY' and 'BYMONTHDAY' in parts:
+        day = parts['BYMONTHDAY']
+        base += f" on day {day}"
+
+    return base
+
+
 def format_task_markdown(task: Dict[str, Any], detailed: bool = True) -> str:
     '''
     Format a single task as Markdown.
@@ -71,6 +125,12 @@ def format_task_markdown(task: Dict[str, Any], detailed: bool = True) -> str:
 
     if task.get('due_date'):
         lines.append(f"- **Due**: {format_timestamp(task['due_date'])}")
+
+    if task.get('repeats'):
+        repeat_text = format_rrule(task['repeats'])
+        if task.get('repeats_from_current_date'):
+            repeat_text += " (from completion)"
+        lines.append(f"- **Repeats**: {repeat_text}")
 
     if task.get('labels') and len(task['labels']) > 0:
         label_names = [f"`{label.get('title', 'Unknown')}`" for label in task['labels']]
@@ -129,6 +189,8 @@ def format_tasks_list_markdown(
             if priority > 0:
                 priority_map = {1: "🔵", 2: "🟡", 3: "🟠", 4: "🔴", 5: "🚨"}
                 line += f" {priority_map.get(priority, '')}"
+            if task.get('repeats'):
+                line += " 🔁"
             lines.append(line)
 
     # Pagination info
