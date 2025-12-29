@@ -76,6 +76,14 @@ class CreateTaskInput(BaseModel):
         description="End date in ISO 8601 format (optional)",
         pattern=r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$'
     )
+    repeats: Optional[str] = Field(
+        default=None,
+        description="RFC 5545 RRULE recurrence string (e.g., 'FREQ=DAILY;INTERVAL=1', 'FREQ=WEEKLY;BYDAY=MO,WE,FR', 'FREQ=MONTHLY;BYMONTHDAY=15')"
+    )
+    repeats_from_current_date: Optional[bool] = Field(
+        default=None,
+        description="If true, next occurrence is calculated from completion date rather than original due date"
+    )
 
     @field_validator('title')
     @classmethod
@@ -193,6 +201,14 @@ class UpdateTaskInput(BaseModel):
         default=None,
         description="New due date in ISO 8601 format (optional)",
         pattern=r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$'
+    )
+    repeats: Optional[str] = Field(
+        default=None,
+        description="RFC 5545 RRULE recurrence string (e.g., 'FREQ=DAILY;INTERVAL=1'). Set to empty string to remove recurrence."
+    )
+    repeats_from_current_date: Optional[bool] = Field(
+        default=None,
+        description="If true, next occurrence is calculated from completion date rather than original due date"
     )
 
     @field_validator('title')

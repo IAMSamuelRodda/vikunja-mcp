@@ -99,6 +99,12 @@ async def vikunja_create_task(params: CreateTaskInput) -> str:
         if params.end_date:
             payload["end_date"] = params.end_date
 
+        # Add optional recurrence fields
+        if params.repeats is not None:
+            payload["repeats"] = params.repeats
+        if params.repeats_from_current_date is not None:
+            payload["repeats_from_current_date"] = params.repeats_from_current_date
+
         # Make API request
         response = await _client.request(
             "PUT",
@@ -373,6 +379,10 @@ async def vikunja_update_task(params: UpdateTaskInput) -> str:
             payload["priority"] = params.priority.value
         if params.due_date is not None:
             payload["due_date"] = params.due_date
+        if params.repeats is not None:
+            payload["repeats"] = params.repeats
+        if params.repeats_from_current_date is not None:
+            payload["repeats_from_current_date"] = params.repeats_from_current_date
 
         # Make API request (POST for Vikunja task update, acts like PATCH)
         response = await _client.request(
