@@ -22,19 +22,33 @@ Python-based MCP server providing comprehensive integration with Vikunja task ma
 
 ## Installation
 
-### Using uv (recommended)
+### Quick Install (Claude Code)
 
 ```bash
 # Clone the repository
+git clone https://github.com/IAMSamuelRodda/vikunja-mcp.git
 cd vikunja-mcp
 
-# Install dependencies
-uv pip install -r requirements.txt
+# Create config from example
+cp config.json.example config.json
+
+# Edit config.json with your Vikunja URL and token
+# Then run the install script
+./install.sh
 ```
 
-### Using pip
+The install script will:
+1. Create a Python virtual environment
+2. Install dependencies
+3. Register the MCP server with Claude Code
+
+### Manual Installation
 
 ```bash
+# Install dependencies with uv (recommended)
+uv pip install -r requirements.txt
+
+# Or with pip
 pip install -r requirements.txt
 ```
 
@@ -60,12 +74,12 @@ The identifier is auto-detected from your git email (`git config user.email`).
 # For the current user
 bao kv put secret/client0/prod-mcp-vikunja-$(git config user.email | cut -d@ -f1) \
   token="your-vikunja-token" \
-  url="https://tasks.rodda.xyz/"
+  url="https://vikunja.example.com/"
 
 # For a specific user
-bao kv put secret/client0/prod-mcp-vikunja-kayla \
-  token="kayla-token" \
-  url="https://tasks.rodda.xyz/"
+bao kv put secret/client0/prod-mcp-vikunja-otheruser \
+  token="other-user-token" \
+  url="https://vikunja.example.com/"
 ```
 
 The MCP server will automatically connect to the OpenBao agent at `http://127.0.0.1:18200`.
