@@ -6,6 +6,32 @@ This document tracks flagged items, required spikes, risks, and blockers identif
 
 ## Active Bugs
 
+### BUG-002: Project and Label Creation Uses Wrong HTTP Method
+
+**Status**: ✅ Resolved
+**Priority**: P1 - High
+**Discovered**: 2025-12-18
+**Resolved**: 2025-12-18
+
+**Description:**
+The `vikunja_create_project` and `vikunja_create_label` tools use `POST` HTTP method instead of `PUT`, causing 404 errors when attempting to create resources.
+
+**Affected Files:**
+- `src/tools/projects.py:72` - was using `POST` to "projects"
+- `src/tools/labels.py:65` - was using `POST` to "labels"
+
+**Root Cause:**
+The Vikunja API uses `PUT` for creating new resources, not `POST`. This was previously fixed for task creation in commit `eed7b38` but the same fix was not applied to project and label creation.
+
+**Resolution:**
+Changed HTTP method from `POST` to `PUT` in both files:
+- `src/tools/projects.py:72` - now uses `PUT`
+- `src/tools/labels.py:65` - now uses `PUT`
+
+**Note:** Server restart required for changes to take effect when running via mcp-proxy.
+
+---
+
 ### BUG-001: Lazy-MCP Reports Incorrect Tool Count (27 actual vs 23 reported)
 
 **Status**: ✅ Resolved
@@ -240,5 +266,5 @@ These items are at the 3.0 complexity threshold but deemed manageable. Monitor d
 
 ---
 
-**Last Updated**: 2025-12-16
+**Last Updated**: 2025-12-18
 **Blueprint**: `specs/archive/BLUEPRINT-project-vikunja-mcp-20251216.yaml` (to be archived)
