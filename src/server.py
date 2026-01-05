@@ -11,9 +11,12 @@ Usage:
 '''
 
 import os
+import sys
 import asyncio
 from contextlib import asynccontextmanager
 from mcp.server.fastmcp import FastMCP, Context
+
+from src import __version__
 
 # Import client
 from src.client.vikunja_client import VikunjaClient
@@ -548,6 +551,9 @@ if __name__ == "__main__":
         load_dotenv()
     except ImportError:
         pass  # dotenv is optional
+
+    # Log version on startup
+    print(f"vikunja-mcp v{__version__}", file=sys.stderr)
 
     # Run the server
     mcp.run()

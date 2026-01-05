@@ -69,7 +69,7 @@ async def vikunja_create_project(params: CreateProjectInput) -> str:
         if params.parent_project_id:
             payload["parent_project_id"] = params.parent_project_id
 
-        response = await _client.request("POST", "projects", json_data=payload)
+        response = await _client.request("PUT", "projects", json_data=payload)
         return format_json_response(response)
 
     except Exception as e:

@@ -62,7 +62,7 @@ async def vikunja_create_label(params: CreateLabelInput) -> str:
             "hex_color": params.hex_color
         }
 
-        response = await _client.request("POST", "labels", json_data=payload)
+        response = await _client.request("PUT", "labels", json_data=payload)
         return format_json_response(response)
 
     except Exception as e:
