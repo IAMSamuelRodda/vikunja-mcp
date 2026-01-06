@@ -5,10 +5,9 @@ Quick test script to create a task in Vikunja INBOX using the MCP server's clien
 import asyncio
 import sys
 from src.client.vikunja_client import VikunjaClient
-from src.utils.openbao_secrets import get_mcp_config
 
 async def main():
-    # Initialize client (auto-retrieves credentials from OpenBao/env)
+    # Initialize client (retrieves credentials from environment variables)
     print("Initializing Vikunja client...")
     try:
         client = VikunjaClient()
@@ -39,7 +38,7 @@ async def main():
         print("\nCreating test task...")
         task_data = {
             "title": "Test task from vikunja-mcp server",
-            "description": "Created via the new MCP server with OpenBao integration 🤖"
+            "description": "Created via the vikunja-mcp server"
         }
 
         task = await client.request("PUT", f"projects/{inbox_id}/tasks", json_data=task_data)
