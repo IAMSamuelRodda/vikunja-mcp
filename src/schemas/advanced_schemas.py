@@ -67,9 +67,9 @@ class DeleteReminderInput(BaseModel):
         description="ID of the task",
         ge=1
     )
-    reminder_id: int = Field(
+    reminder_index: int = Field(
         ...,
-        description="ID of the reminder to delete",
+        description="Index of the reminder to delete (1-based, as shown in list_reminders output)",
         ge=1
     )
 
