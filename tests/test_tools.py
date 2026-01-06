@@ -228,20 +228,46 @@ async def test_add_label_to_task_success(mock_client):
 @pytest.mark.asyncio
 async def test_add_reminder_success(mock_client):
     '''Test adding reminder to task.'''
-    mock_client.request.return_value = {
-        "id": 5,
-        "reminder": "2025-12-25T09:00:00Z"
-    }
+    # Mock GET to return existing task with no reminders
+    mock_client.request.side_effect = [
+        {"id": 123, "title": "Test Task", "reminders": []},  # GET task
+        {"id": 123, "reminders": [{"reminder": "2025-12-25T09:00:00Z"}]}  # POST update
+    ]
 
     params = AddReminderInput(task_id=123, reminder_date="2025-12-25T09:00:00Z")
 
     result = await advanced.vikunja_add_reminder(params)
 
-    mock_client.request.assert_called_once()
-    call_args = mock_client.request.call_args
-    assert call_args[0][0] == "PUT"
-    assert "tasks/123/reminders" in call_args[0][1]
-    assert call_args[1]["json_data"]["reminder"] == "2025-12-25T09:00:00Z"
+    assert mock_client.request.call_count == 2
+    # First call should be GET to retrieve task
+    first_call = mock_client.request.call_args_list[0]
+    assert first_call[0][0] == "GET"
+    assert "tasks/123" in first_call[0][1]
+    # Second call should be POST to update task with reminders
+    second_call = mock_client.request.call_args_list[1]
+    assert second_call[0][0] == "POST"
+    assert "tasks/123" in second_call[0][1]
+    assert second_call[1]["json_data"]["reminders"] == [{"reminder": "2025-12-25T09:00:00Z"}]
+
+
+@pytest.mark.asyncio
+async def test_add_reminder_preserves_existing(mock_client):
+    '''Test adding reminder preserves existing reminders.'''
+    existing_reminder = {"reminder": "2025-11-01T10:00:00Z"}
+    # Mock GET to return existing task with one reminder
+    mock_client.request.side_effect = [
+        {"id": 123, "title": "Test Task", "reminders": [existing_reminder]},  # GET task
+        {"id": 123, "reminders": [existing_reminder, {"reminder": "2025-12-25T09:00:00Z"}]}  # POST update
+    ]
+
+    params = AddReminderInput(task_id=123, reminder_date="2025-12-25T09:00:00Z")
+
+    result = await advanced.vikunja_add_reminder(params)
+
+    assert mock_client.request.call_count == 2
+    second_call = mock_client.request.call_args_list[1]
+    # Should include both existing and new reminder
+    assert len(second_call[1]["json_data"]["reminders"]) == 2
 
 
 @pytest.mark.asyncio

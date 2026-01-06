@@ -47,6 +47,7 @@ async def vikunja_add_reminder(params: AddReminderInput) -> str:
     Add a reminder to a task.
 
     Creates a time-based reminder that will trigger at the specified date/time.
+    Reminders are managed as part of the task object via the task update endpoint.
 
     Args:
         params (AddReminderInput): Validated input containing:
@@ -60,16 +61,28 @@ async def vikunja_add_reminder(params: AddReminderInput) -> str:
         - Add reminder: params with task_id=123, reminder_date="2025-12-25T09:00:00Z"
     '''
     try:
-        payload: Dict[str, Any] = {
-            "reminder": params.reminder_date
-        }
+        # First, get the current task to retrieve existing reminders
+        task = await _client.request("GET", f"tasks/{params.task_id}")
+        existing_reminders = task.get("reminders") or []
 
+        # Create the new reminder object
+        new_reminder = {"reminder": params.reminder_date}
+
+        # Append new reminder to existing ones
+        updated_reminders = existing_reminders + [new_reminder]
+
+        # Update the task with the new reminders array
         response = await _client.request(
-            "PUT",
-            f"tasks/{params.task_id}/reminders",
-            json_data=payload
+            "POST",
+            f"tasks/{params.task_id}",
+            json_data={"reminders": updated_reminders}
         )
-        return format_json_response(response)
+
+        # Return just the reminders portion for clarity
+        return format_json_response({
+            "task_id": params.task_id,
+            "reminders": response.get("reminders", [])
+        })
 
     except Exception as e:
         return handle_api_error(e)
@@ -119,25 +132,47 @@ async def vikunja_delete_reminder(params: DeleteReminderInput) -> str:
     '''
     Delete a reminder from a task.
 
-    Removes a specific reminder.
+    Removes a specific reminder by its index in the reminders list.
+    Reminders are managed as part of the task object via the task update endpoint.
 
     Args:
         params (DeleteReminderInput): Validated input containing:
             - task_id (int): ID of task (required)
-            - reminder_id (int): ID of reminder to delete (required)
+            - reminder_index (int): 1-based index of reminder to delete (required)
 
     Returns:
         str: Success confirmation message
 
     Examples:
-        - Delete reminder: params with task_id=123, reminder_id=5
+        - Delete first reminder: params with task_id=123, reminder_index=1
     '''
     try:
+        # Get the current task to retrieve existing reminders
+        task = await _client.request("GET", f"tasks/{params.task_id}")
+        existing_reminders = task.get("reminders") or []
+
+        # Validate the index
+        if params.reminder_index < 1 or params.reminder_index > len(existing_reminders):
+            return f"Error: Reminder index {params.reminder_index} is out of range. Task has {len(existing_reminders)} reminder(s)."
+
+        # Get the reminder being deleted for the confirmation message
+        deleted_reminder = existing_reminders[params.reminder_index - 1]
+        deleted_date = deleted_reminder.get("reminder", "unknown")
+
+        # Remove the reminder at the specified index (convert to 0-based)
+        updated_reminders = [
+            r for i, r in enumerate(existing_reminders)
+            if i != params.reminder_index - 1
+        ]
+
+        # Update the task with the filtered reminders array
         await _client.request(
-            "DELETE",
-            f"tasks/{params.task_id}/reminders/{params.reminder_id}"
+            "POST",
+            f"tasks/{params.task_id}",
+            json_data={"reminders": updated_reminders}
         )
-        return f"Reminder #{params.reminder_id} deleted from task #{params.task_id}."
+
+        return f"Reminder at index {params.reminder_index} ({format_timestamp(deleted_date)}) deleted from task #{params.task_id}."
 
     except Exception as e:
         return handle_api_error(e)
