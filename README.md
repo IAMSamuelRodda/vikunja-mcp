@@ -35,8 +35,9 @@ Zero-install method using [uv](https://docs.astral.sh/uv/). Add to `~/.claude.js
 ### Option 2: Local Clone
 
 ```bash
-git clone https://github.com/IAMSamuelRodda/vikunja-mcp.git
-cd vikunja-mcp
+mkdir -p ~/.claude/mcp-servers
+git clone https://github.com/IAMSamuelRodda/vikunja-mcp.git ~/.claude/mcp-servers/vikunja-mcp
+cd ~/.claude/mcp-servers/vikunja-mcp
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -48,9 +49,9 @@ Add to `~/.claude.json`:
 {
   "mcpServers": {
     "vikunja": {
-      "command": "/path/to/vikunja-mcp/.venv/bin/python",
+      "command": "~/.claude/mcp-servers/vikunja-mcp/.venv/bin/python",
       "args": ["-m", "src.server"],
-      "cwd": "/path/to/vikunja-mcp",
+      "cwd": "~/.claude/mcp-servers/vikunja-mcp",
       "env": {
         "VIKUNJA_URL": "https://your-vikunja-instance.com",
         "VIKUNJA_TOKEN": "your-api-token"
@@ -79,7 +80,7 @@ uv cache clean vikunja-mcp
 ### Local clone users
 
 ```bash
-cd /path/to/vikunja-mcp
+cd ~/.claude/mcp-servers/vikunja-mcp
 git pull
 source .venv/bin/activate
 pip install -r requirements.txt
