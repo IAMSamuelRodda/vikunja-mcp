@@ -42,8 +42,8 @@ class CreateTaskInput(BaseModel):
     )
 
     project_id: int = Field(
-        ...,
-        description="ID of the project/list to create the task in (e.g., 5, 12). Get project IDs with vikunja_list_projects.",
+        default=1,
+        description="ID of the project/list to create the task in (default: 1 = Inbox). Get project IDs with vikunja_list_projects.",
         ge=1
     )
     title: str = Field(
