@@ -1,0 +1,25 @@
+{
+  "name": "vikunja-mcp",
+  "version": "1.0.0",
+  "description": "Vikunja task management MCP server with CRUD, labels, reminders, and pagination",
+  "author": {
+    "name": "Samuel Rodda",
+    "email": "samuel@arcforge.au"
+  },
+  "homepage": "https://github.com/IAMSamuelRodda/vikunja-mcp",
+  "repository": "https://github.com/IAMSamuelRodda/vikunja-mcp",
+  "license": "MIT",
+  "keywords": ["vikunja", "tasks", "mcp", "productivity", "gtd", "self-hosted"],
+  "commands": "./commands",
+  "mcpServers": {
+    "vikunja": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/.venv/bin/python",
+      "args": ["-m", "src.server"],
+      "cwd": "${CLAUDE_PLUGIN_ROOT}",
+      "env": {
+        "VIKUNJA_URL": "${VIKUNJA_URL}",
+        "VIKUNJA_TOKEN": "${VIKUNJA_TOKEN}"
+      }
+    }
+  }
+}
