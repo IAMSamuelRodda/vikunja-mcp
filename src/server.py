@@ -20,7 +20,6 @@ from src import __version__
 
 # Import client
 from src.client.vikunja_client import VikunjaClient
-from src.utils.openbao_secrets import is_agent_available, DEV_MODE
 
 # Import schemas
 from src.schemas.task_schemas import (
@@ -85,20 +84,9 @@ async def lifespan(app):
     labels.set_client(_client)
     advanced.set_client(_client)
 
-    # Determine credential source for logging
-    if is_agent_available():
-        cred_source = "OpenBao Agent"
-    elif DEV_MODE:
-        cred_source = "Environment Variables [DEV MODE]"
-    else:
-        cred_source = "OpenBao Agent (REQUIRED)"
-
     print(f"✓ Vikunja MCP server initialized")
     print(f"  URL: {_client.base_url}")
     print(f"  API: {_client.api_base}")
-    print(f"  Credentials: {cred_source}")
-    if DEV_MODE:
-        print(f"  WARNING: Dev mode enabled - env var fallback allowed")
 
     yield {"client": _client}
 
@@ -544,7 +532,8 @@ async def share_project(params: ShareProjectInput) -> str:
 # SERVER ENTRY POINT
 # ============================================================================
 
-if __name__ == "__main__":
+def main():
+    """Entry point for vikunja-mcp command."""
     # Load environment variables from .env if available
     try:
         from dotenv import load_dotenv
@@ -557,3 +546,7 @@ if __name__ == "__main__":
 
     # Run the server
     mcp.run()
+
+
+if __name__ == "__main__":
+    main()

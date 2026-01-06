@@ -10,12 +10,10 @@
   "repository": "https://github.com/IAMSamuelRodda/vikunja-mcp",
   "license": "MIT",
   "keywords": ["vikunja", "tasks", "mcp", "productivity", "gtd", "self-hosted"],
-  "commands": "./commands",
   "mcpServers": {
     "vikunja": {
-      "command": "${CLAUDE_PLUGIN_ROOT}/.venv/bin/python",
-      "args": ["-m", "src.server"],
-      "cwd": "${CLAUDE_PLUGIN_ROOT}",
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/IAMSamuelRodda/vikunja-mcp", "vikunja-mcp"],
       "env": {
         "VIKUNJA_URL": "${VIKUNJA_URL}",
         "VIKUNJA_TOKEN": "${VIKUNJA_TOKEN}"
