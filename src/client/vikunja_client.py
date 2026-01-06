@@ -7,11 +7,14 @@ limiting, and request/response management.
 
 Credential Resolution (in order):
 1. OpenBao Agent (if openbao_secrets module available and agent running)
-2. Environment variables: VIKUNJA_URL, VIKUNJA_TOKEN
+2. Config file: ~/.config/vikunja-mcp/config.json
+3. Environment variables: VIKUNJA_URL, VIKUNJA_TOKEN
 '''
 
 import os
+import json
 import asyncio
+from pathlib import Path
 from typing import Any, Dict, Optional
 import httpx
 from src.utils.errors import handle_api_error
@@ -28,6 +31,7 @@ API_VERSION = "v1"
 REQUEST_TIMEOUT = 30.0
 MAX_RETRIES = 3
 RETRY_DELAY = 1.0  # Initial delay in seconds for exponential backoff
+CONFIG_FILE_PATH = Path.home() / ".config" / "vikunja-mcp" / "config.json"
 
 
 class VikunjaClient:
@@ -39,7 +43,8 @@ class VikunjaClient:
 
     Credential Resolution (in order):
     1. OpenBao Agent (if openbao_secrets module available and agent running)
-    2. Environment variables: VIKUNJA_URL, VIKUNJA_TOKEN
+    2. Config file: ~/.config/vikunja-mcp/config.json
+    3. Environment variables: VIKUNJA_URL, VIKUNJA_TOKEN
 
     Attributes:
         base_url (str): Base URL of the Vikunja instance
@@ -57,11 +62,17 @@ class VikunjaClient:
 
         if not self.base_url:
             raise ValueError(
-                "Vikunja URL not found. Set VIKUNJA_URL environment variable."
+                f"Vikunja URL not found. Either:\n"
+                f"  1. Create config file: {CONFIG_FILE_PATH}\n"
+                f"  2. Set VIKUNJA_URL environment variable\n"
+                f"  Run 'setup-credentials.sh' for guided setup."
             )
         if not self.token:
             raise ValueError(
-                "Vikunja token not found. Set VIKUNJA_TOKEN environment variable."
+                f"Vikunja token not found. Either:\n"
+                f"  1. Create config file: {CONFIG_FILE_PATH}\n"
+                f"  2. Set VIKUNJA_TOKEN environment variable\n"
+                f"  Run 'setup-credentials.sh' for guided setup."
             )
 
         # Build API base URL
@@ -72,9 +83,12 @@ class VikunjaClient:
 
     def _load_config(self) -> tuple[Dict[str, str], str]:
         '''
-        Load configuration from OpenBao agent or environment variables.
+        Load configuration from OpenBao agent, config file, or environment variables.
 
-        Tries OpenBao first (if available and agent running), falls back to env vars.
+        Tries sources in order:
+        1. OpenBao (if available and agent running)
+        2. Config file (~/.config/vikunja-mcp/config.json)
+        3. Environment variables (VIKUNJA_URL, VIKUNJA_TOKEN)
 
         Returns:
             Tuple of (config dict with 'url' and 'token', source string)
@@ -89,6 +103,18 @@ class VikunjaClient:
                     })
                     return config, "openbao"
             except Exception:
+                pass  # Fall through to config file
+
+        # Try config file
+        if CONFIG_FILE_PATH.exists():
+            try:
+                with open(CONFIG_FILE_PATH, 'r') as f:
+                    config_data = json.load(f)
+                url = config_data.get("url") or config_data.get("vikunja_url", "")
+                token = config_data.get("token") or config_data.get("vikunja_token", "")
+                if url and token:
+                    return {"url": url, "token": token}, f"config file ({CONFIG_FILE_PATH})"
+            except (json.JSONDecodeError, IOError):
                 pass  # Fall through to env vars
 
         # Fallback to environment variables

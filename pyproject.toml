@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "vikunja-mcp"
-version = "1.0.0"
+version = "1.1.0"
 description = "Vikunja task management MCP server for Claude Code"
 readme = "README.md"
 license = "MIT"
