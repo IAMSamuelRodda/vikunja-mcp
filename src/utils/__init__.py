@@ -13,15 +13,6 @@ from src.utils.formatters import (
     ResponseFormat
 )
 from src.utils.pagination import build_pagination_response, validate_pagination_params
-from src.utils.openbao_secrets import (
-    get_mcp_token,
-    get_mcp_config,
-    is_agent_available,
-    OpenBaoError,
-    AgentNotRunningError,
-    SecretNotFoundError,
-    DEV_MODE
-)
 
 __all__ = [
     "handle_api_error",
@@ -34,11 +25,4 @@ __all__ = [
     "ResponseFormat",
     "build_pagination_response",
     "validate_pagination_params",
-    "get_mcp_token",
-    "get_mcp_config",
-    "is_agent_available",
-    "OpenBaoError",
-    "AgentNotRunningError",
-    "SecretNotFoundError",
-    "DEV_MODE"
 ]
