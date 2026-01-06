@@ -294,7 +294,7 @@ async def vikunja_list_tasks(params: ListTasksInput) -> str:
         if params.project_id:
             endpoint = f"projects/{params.project_id}/tasks"
         else:
-            endpoint = "tasks/all"
+            endpoint = "tasks"
 
         # Make API request
         response = await _client.request(
@@ -303,10 +303,10 @@ async def vikunja_list_tasks(params: ListTasksInput) -> str:
             params=query_params
         )
 
-        # Extract tasks and total (Vikunja returns array directly for /tasks/all)
+        # Extract tasks and total (Vikunja returns array directly for /tasks)
         if isinstance(response, list):
             tasks = response
-            total = len(tasks)  # Approximate, Vikunja doesn't provide total for /tasks/all
+            total = len(tasks)  # Approximate, Vikunja doesn't provide total for /tasks
         else:
             tasks = response.get("tasks", response if isinstance(response, list) else [])
             total = response.get("total", len(tasks))
