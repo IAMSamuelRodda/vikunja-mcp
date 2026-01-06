@@ -1,10 +1,18 @@
 #!/usr/bin/env bash
 # Vikunja MCP Server - Claude Code Installation Script
+#
+# This script performs a full local installation:
+# 1. Sets up credentials (via setup-credentials.sh)
+# 2. Creates Python virtual environment
+# 3. Registers MCP server with Claude Code
+#
+# For plugin installations, only run setup-credentials.sh
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_FILE="${SCRIPT_DIR}/config.json"
+CONFIG_DIR="${HOME}/.config/vikunja-mcp"
+CONFIG_FILE="${CONFIG_DIR}/config.json"
 
 # Colors
 RED='\033[0;31m'
@@ -16,52 +24,49 @@ info() { echo -e "${GREEN}[INFO]${NC} $1"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 
-# Check for jq
-command -v jq >/dev/null 2>&1 || error "jq is required. Install with: sudo apt install jq"
+echo ""
+echo "╔════════════════════════════════════════════════════════════╗"
+echo "║        Vikunja MCP Server - Full Installation              ║"
+echo "╚════════════════════════════════════════════════════════════╝"
+echo ""
 
-# Check for config.json
+# Step 1: Setup credentials if not already configured
 if [[ ! -f "$CONFIG_FILE" ]]; then
-    if [[ -f "${SCRIPT_DIR}/config.json.example" ]]; then
-        info "Creating config.json from example..."
-        cp "${SCRIPT_DIR}/config.json.example" "$CONFIG_FILE"
-        warn "Please edit config.json with your Vikunja URL and token, then re-run this script."
-        warn "Get your token from: Vikunja → Settings → API Tokens"
-        exit 0
-    else
-        error "config.json not found. Create it from config.json.example"
-    fi
+    info "Setting up credentials..."
+    "${SCRIPT_DIR}/setup-credentials.sh"
+else
+    info "Credentials already configured: $CONFIG_FILE"
 fi
 
-# Parse config.json
-VIKUNJA_URL=$(jq -r '.vikunja_url // ""' "$CONFIG_FILE")
-VIKUNJA_TOKEN=$(jq -r '.vikunja_token // ""' "$CONFIG_FILE")
-
-# Validate
-if [[ -z "$VIKUNJA_URL" || "$VIKUNJA_URL" == "https://vikunja.example.com" ]]; then
-    error "vikunja_url not configured in config.json"
+# Validate config exists
+if [[ ! -f "$CONFIG_FILE" ]]; then
+    error "Config file not found after setup. Please run setup-credentials.sh manually."
 fi
 
-if [[ -z "$VIKUNJA_TOKEN" ]]; then
-    error "vikunja_token not configured in config.json"
-fi
-
-# Create Python venv if needed
+# Step 2: Create Python venv if needed
 if [[ ! -d "${SCRIPT_DIR}/.venv" ]]; then
     info "Creating Python virtual environment..."
     python3 -m venv "${SCRIPT_DIR}/.venv"
     info "Installing dependencies..."
     "${SCRIPT_DIR}/.venv/bin/pip" install -q -r "${SCRIPT_DIR}/requirements.txt"
+else
+    info "Python virtual environment already exists"
 fi
 
-# Register with Claude Code
+# Step 3: Register with Claude Code (without env vars - server reads from config file)
 MCP_NAME="vikunja"
 PYTHON_PATH="${SCRIPT_DIR}/.venv/bin/python"
 
 info "Registering MCP server with Claude Code..."
-claude mcp add "$MCP_NAME" -s user \
-    --env "VIKUNJA_URL=${VIKUNJA_URL}" \
-    --env "VIKUNJA_TOKEN=${VIKUNJA_TOKEN}" \
-    -- "$PYTHON_PATH" -m src.server
+claude mcp add "$MCP_NAME" -s user -- "$PYTHON_PATH" -m src.server
 
-info "Vikunja MCP server registered successfully!"
-info "Restart Claude Code to use the new server."
+echo ""
+info "Installation complete!"
+echo ""
+echo "Next steps:"
+echo "  1. Restart Claude Code to load the new server"
+echo "  2. Try: 'List my Vikunja projects'"
+echo ""
+echo "To update credentials later, run:"
+echo "  ${SCRIPT_DIR}/setup-credentials.sh"
+echo ""

@@ -1,6 +1,6 @@
 {
   "name": "vikunja-mcp",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Vikunja task management MCP server with CRUD, labels, reminders, and pagination",
   "author": {
     "name": "Samuel Rodda",
@@ -14,10 +14,8 @@
     "vikunja": {
       "command": "uvx",
       "args": ["--from", "git+https://github.com/IAMSamuelRodda/vikunja-mcp", "vikunja-mcp"],
-      "env": {
-        "VIKUNJA_URL": "${VIKUNJA_URL}",
-        "VIKUNJA_TOKEN": "${VIKUNJA_TOKEN}"
-      }
+      "env": {}
     }
-  }
+  },
+  "postInstallMessage": "Run setup-credentials.sh to configure your Vikunja credentials:\n  curl -sSL https://raw.githubusercontent.com/IAMSamuelRodda/vikunja-mcp/main/setup-credentials.sh | bash"
 }

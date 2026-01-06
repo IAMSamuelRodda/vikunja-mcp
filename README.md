@@ -13,52 +13,53 @@ MCP server for [Vikunja](https://vikunja.io/) task management (v0.24.0+). Provid
 
 ## Installation
 
-### Option 1: uvx (Recommended)
+### Option 1: Claude Code Plugin (Recommended)
 
-Zero-install method using [uv](https://docs.astral.sh/uv/). Add to `~/.claude.json`:
+Install via the Claude Code plugin marketplace:
 
-```json
-{
-  "mcpServers": {
-    "vikunja": {
-      "command": "uvx",
-      "args": ["--from", "git+https://github.com/IAMSamuelRodda/vikunja-mcp", "vikunja-mcp"],
-      "env": {
-        "VIKUNJA_URL": "https://your-vikunja-instance.com",
-        "VIKUNJA_TOKEN": "your-api-token"
-      }
-    }
-  }
-}
+```
+/plugin install vikunja-mcp
 ```
 
-### Option 2: Local Clone
+Then configure your credentials:
 
 ```bash
-mkdir -p ~/.claude/mcp-servers
-git clone https://github.com/IAMSamuelRodda/vikunja-mcp.git ~/.claude/mcp-servers/vikunja-mcp
-cd ~/.claude/mcp-servers/vikunja-mcp
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+curl -sSL https://raw.githubusercontent.com/IAMSamuelRodda/vikunja-mcp/main/setup-credentials.sh | bash
 ```
 
-Add to `~/.claude.json`:
+Restart Claude Code to activate.
 
-```json
-{
-  "mcpServers": {
-    "vikunja": {
-      "command": "~/.claude/mcp-servers/vikunja-mcp/.venv/bin/python",
-      "args": ["-m", "src.server"],
-      "cwd": "~/.claude/mcp-servers/vikunja-mcp",
-      "env": {
-        "VIKUNJA_URL": "https://your-vikunja-instance.com",
-        "VIKUNJA_TOKEN": "your-api-token"
-      }
-    }
-  }
-}
+### Option 2: Local Installation Script
+
+Clone and run the install script:
+
+```bash
+git clone https://github.com/IAMSamuelRodda/vikunja-mcp.git
+cd vikunja-mcp
+./install.sh
+```
+
+The script will:
+1. Prompt for your Vikunja URL and API token
+2. Create a Python virtual environment
+3. Register the MCP server with Claude Code
+
+### Option 3: Manual Configuration
+
+For advanced users who prefer manual setup:
+
+1. **Setup credentials** (required for all methods):
+
+```bash
+curl -sSL https://raw.githubusercontent.com/IAMSamuelRodda/vikunja-mcp/main/setup-credentials.sh | bash
+```
+
+This creates `~/.config/vikunja-mcp/config.json` with your credentials.
+
+2. **Add to Claude Code** using uvx:
+
+```bash
+claude mcp add vikunja -s user -- uvx --from git+https://github.com/IAMSamuelRodda/vikunja-mcp vikunja-mcp
 ```
 
 ### Get Your API Token
@@ -67,7 +68,44 @@ Add to `~/.claude.json`:
 2. Go to **Settings** → **API Tokens**
 3. Create a new token and copy it
 
+## Credential Configuration
+
+All installation methods use the same config file:
+
+```
+~/.config/vikunja-mcp/config.json
+```
+
+To update credentials at any time:
+
+```bash
+./setup-credentials.sh
+# or
+curl -sSL https://raw.githubusercontent.com/IAMSamuelRodda/vikunja-mcp/main/setup-credentials.sh | bash
+```
+
+### Credential Resolution Order
+
+The server looks for credentials in this order:
+1. **OpenBao Agent** (if available) - for enterprise secret management
+2. **Config file** (`~/.config/vikunja-mcp/config.json`) - recommended
+3. **Environment variables** (`VIKUNJA_URL`, `VIKUNJA_TOKEN`) - backward compatible
+
 ## Updating
+
+### Plugin users
+
+```
+/plugin update vikunja-mcp
+```
+
+### Local installation users
+
+```bash
+cd vikunja-mcp
+git pull
+./install.sh
+```
 
 ### uvx users
 
@@ -75,15 +113,6 @@ Clear the cache and restart Claude Code:
 
 ```bash
 uv cache clean vikunja-mcp
-```
-
-### Local clone users
-
-```bash
-cd ~/.claude/mcp-servers/vikunja-mcp
-git pull
-source .venv/bin/activate
-pip install -r requirements.txt
 ```
 
 ## Available Tools (27 total)
