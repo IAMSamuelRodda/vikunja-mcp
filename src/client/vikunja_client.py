@@ -5,9 +5,9 @@ This module provides an async HTTP client wrapper for interacting with the
 Vikunja REST API (v0.24.0+). It handles authentication, error handling, rate
 limiting, and request/response management.
 
-Credentials are loaded from environment variables:
-- VIKUNJA_URL: Base URL of your Vikunja instance
-- VIKUNJA_TOKEN: API token for authentication
+Credential Resolution (in order):
+1. OpenBao Agent (if openbao_secrets module available and agent running)
+2. Environment variables: VIKUNJA_URL, VIKUNJA_TOKEN
 '''
 
 import os
@@ -15,6 +15,13 @@ import asyncio
 from typing import Any, Dict, Optional
 import httpx
 from src.utils.errors import handle_api_error
+
+# Optional OpenBao support - gracefully falls back to env vars if not available
+try:
+    from src.utils.openbao_secrets import get_mcp_config, is_agent_available
+    OPENBAO_AVAILABLE = True
+except ImportError:
+    OPENBAO_AVAILABLE = False
 
 # Constants
 API_VERSION = "v1"
@@ -30,19 +37,20 @@ class VikunjaClient:
     Handles bearer token authentication, error responses, rate limiting with
     exponential backoff, and provides a consistent interface for all API calls.
 
-    Credentials are loaded from environment variables:
-    - VIKUNJA_URL: Base URL of your Vikunja instance
-    - VIKUNJA_TOKEN: API token for authentication
+    Credential Resolution (in order):
+    1. OpenBao Agent (if openbao_secrets module available and agent running)
+    2. Environment variables: VIKUNJA_URL, VIKUNJA_TOKEN
 
     Attributes:
         base_url (str): Base URL of the Vikunja instance
         token (str): Bearer token for authentication
         client (httpx.AsyncClient): Reusable async HTTP client
+        credential_source (str): Where credentials were loaded from
     '''
 
     def __init__(self):
-        '''Initialize the Vikunja API client with configuration from environment variables.'''
-        config = self._load_config()
+        '''Initialize the Vikunja API client with configuration from OpenBao or environment.'''
+        config, self.credential_source = self._load_config()
 
         self.base_url = config.get("url", "").rstrip("/")
         self.token = config.get("token", "")
@@ -62,17 +70,32 @@ class VikunjaClient:
         # Initialize async client (will be created lazily)
         self._client: Optional[httpx.AsyncClient] = None
 
-    def _load_config(self) -> Dict[str, str]:
+    def _load_config(self) -> tuple[Dict[str, str], str]:
         '''
-        Load configuration from environment variables.
+        Load configuration from OpenBao agent or environment variables.
+
+        Tries OpenBao first (if available and agent running), falls back to env vars.
 
         Returns:
-            Dict with 'url' and 'token' keys.
+            Tuple of (config dict with 'url' and 'token', source string)
         '''
+        # Try OpenBao first if available
+        if OPENBAO_AVAILABLE:
+            try:
+                if is_agent_available():
+                    config = get_mcp_config("vikunja", dev_fallbacks={
+                        "token": "VIKUNJA_TOKEN",
+                        "url": "VIKUNJA_URL"
+                    })
+                    return config, "openbao"
+            except Exception:
+                pass  # Fall through to env vars
+
+        # Fallback to environment variables
         return {
             "url": os.environ.get("VIKUNJA_URL", ""),
             "token": os.environ.get("VIKUNJA_TOKEN", ""),
-        }
+        }, "environment"
 
     async def _get_client(self) -> httpx.AsyncClient:
         '''Get or create the async HTTP client.

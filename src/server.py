@@ -84,9 +84,9 @@ async def lifespan(app):
     labels.set_client(_client)
     advanced.set_client(_client)
 
-    print(f"✓ Vikunja MCP server initialized")
-    print(f"  URL: {_client.base_url}")
-    print(f"  API: {_client.api_base}")
+    print(f"✓ Vikunja MCP server initialized", file=sys.stderr)
+    print(f"  URL: {_client.base_url}", file=sys.stderr)
+    print(f"  Credentials: {_client.credential_source}", file=sys.stderr)
 
     yield {"client": _client}
 
