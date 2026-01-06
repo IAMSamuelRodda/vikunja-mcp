@@ -16,6 +16,5 @@
       "args": ["--from", "git+https://github.com/IAMSamuelRodda/vikunja-mcp", "vikunja-mcp"],
       "env": {}
     }
-  },
-  "postInstallMessage": "Run setup-credentials.sh to configure your Vikunja credentials:\n  curl -sSL https://raw.githubusercontent.com/IAMSamuelRodda/vikunja-mcp/main/setup-credentials.sh | bash"
+  }
 }
