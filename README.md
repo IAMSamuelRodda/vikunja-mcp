@@ -11,28 +11,32 @@ MCP server for [Vikunja](https://vikunja.io/) task management (v0.24.0+). Provid
 - **Team Collaboration**: Share projects, assign tasks, manage teams
 - **Task Relationships**: Link related, blocking, subtask relationships
 
-## Quick Install
+## Installation
+
+### Option 1: uvx (Recommended)
+
+Zero-install method using [uv](https://docs.astral.sh/uv/). Add to `~/.claude.json`:
+
+```json
+{
+  "mcpServers": {
+    "vikunja": {
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/IAMSamuelRodda/vikunja-mcp", "vikunja-mcp"],
+      "env": {
+        "VIKUNJA_URL": "https://your-vikunja-instance.com",
+        "VIKUNJA_TOKEN": "your-api-token"
+      }
+    }
+  }
+}
+```
+
+### Option 2: Local Clone
 
 ```bash
 git clone https://github.com/IAMSamuelRodda/vikunja-mcp.git
 cd vikunja-mcp
-
-# Create config and add your credentials
-cp config.json.example config.json
-# Edit config.json with your Vikunja URL and API token
-
-./install.sh
-```
-
-### Get Your API Token
-
-1. Open your Vikunja instance
-2. Go to **Settings** → **API Tokens**
-3. Create a new token and copy it
-
-## Manual Setup
-
-```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -54,6 +58,31 @@ Add to `~/.claude.json`:
     }
   }
 }
+```
+
+### Get Your API Token
+
+1. Open your Vikunja instance
+2. Go to **Settings** → **API Tokens**
+3. Create a new token and copy it
+
+## Updating
+
+### uvx users
+
+Clear the cache and restart Claude Code:
+
+```bash
+uv cache clean vikunja-mcp
+```
+
+### Local clone users
+
+```bash
+cd /path/to/vikunja-mcp
+git pull
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
 ## Available Tools (27 total)
