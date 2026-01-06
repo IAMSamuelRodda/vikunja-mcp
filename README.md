@@ -11,6 +11,10 @@ MCP server for [Vikunja](https://vikunja.io/) task management (v0.24.0+). Provid
 - **Team Collaboration**: Share projects, assign tasks, manage teams
 - **Task Relationships**: Link related, blocking, subtask relationships
 
+## Demo
+
+See the MCP server in action: [vikunja-mcp-demo.mp4](https://github.com/IAMSamuelRodda/arc-forge-plugins/raw/master/demo/vikunja-mcp-demo.mp4)
+
 ## Installation
 
 ### Option 1: Claude Code Plugin (Recommended)
