@@ -260,28 +260,35 @@ async def vikunja_list_tasks(params: ListTasksInput) -> str:
         - Returns "Error: Invalid request data" for invalid filter/sort parameters (422)
     '''
     try:
-        # Build query parameters
+        # Build base query parameters (pagination and sorting only)
         query_params: Dict[str, Any] = {
-            "filter_by": [],
-            "filter_value": [],
-            "filter_comparator": [],
-            "filter_concat": "and",
-            "sort_by": [params.sort_by],
-            "order_by": [params.sort_order],
+            "sort_by": params.sort_by,
+            "order_by": params.sort_order,
             "per_page": params.limit,
             "page": (params.offset // params.limit) + 1  # Vikunja uses 1-indexed pages
         }
 
-        # Add filters
+        # Build filter arrays (only include if we have filters)
+        filter_by = []
+        filter_value = []
+        filter_comparator = []
+
         if params.filter_done is not None:
-            query_params["filter_by"].append("done")
-            query_params["filter_value"].append(str(params.filter_done).lower())
-            query_params["filter_comparator"].append("equals")
+            filter_by.append("done")
+            filter_value.append(str(params.filter_done).lower())
+            filter_comparator.append("equals")
 
         if params.filter_priority is not None:
-            query_params["filter_by"].append("priority")
-            query_params["filter_value"].append(str(params.filter_priority.value))
-            query_params["filter_comparator"].append("greater_equals")
+            filter_by.append("priority")
+            filter_value.append(str(params.filter_priority.value))
+            filter_comparator.append("greater_equals")
+
+        # Only add filter params if we have filters to apply
+        if filter_by:
+            query_params["filter_by"] = filter_by
+            query_params["filter_value"] = filter_value
+            query_params["filter_comparator"] = filter_comparator
+            query_params["filter_concat"] = "and"
 
         # Determine endpoint based on project filter
         if params.project_id:
